@@ -33,12 +33,21 @@
               "scheme": "paperback"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d81f095b-137d-4900-8215-15280679f3ca"
+      }
+    },
+    "owner": "chiraitori"
   }
 }
