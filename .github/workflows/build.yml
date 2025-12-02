@@ -179,7 +179,3 @@ jobs:
             ./release/paperand-${{ env.APP_VERSION }}.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            ./release/paperand-${{ env.APP_VERSION }}.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
