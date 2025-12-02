@@ -21,7 +21,8 @@
       },
       "ios": {
         "simulator": false,
-        "resourceClass": "m1-medium"
+        "distribution": "internal",
+        "credentialsSource": "remote"
       }
     },
     "preview-simulator": {

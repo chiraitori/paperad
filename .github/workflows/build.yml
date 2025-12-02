@@ -80,7 +80,7 @@ jobs:
 
   build-ios:
     name: Build iOS
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -103,19 +103,21 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build iOS Simulator App
-        run: eas build --platform ios --profile preview-simulator --local --non-interactive --output ./build/paperand-ios-${{ env.APP_VERSION }}.tar.gz
+      - name: Build iOS on EAS Cloud
+        run: |
+          eas build --platform ios --profile preview --non-interactive --wait --json > build-result.json
+          cat build-result.json
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Create IPA from Simulator App
+      - name: Download IPA from EAS
         run: |
-          cd ./build
-          mkdir -p Payload
-          tar -xzf paperand-ios-${{ env.APP_VERSION }}.tar.gz
-          mv *.app Payload/
-          zip -r paperand-${{ env.APP_VERSION }}.ipa Payload
-          rm -rf Payload *.tar.gz
+          mkdir -p ./build
+          BUILD_URL=$(cat build-result.json | jq -r '.[0].artifacts.buildUrl')
+          echo "Downloading from: $BUILD_URL"
+          curl -L -o ./build/paperand-${{ env.APP_VERSION }}.ipa "$BUILD_URL"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
@@ -157,7 +159,7 @@ jobs:
             
             ### Downloads
             - **Android**: `paperand-${{ env.APP_VERSION }}.apk`
-            - **iOS**: `paperand-${{ env.APP_VERSION }}.ipa` ⚠️ TrollStore required (see below)
+            - **iOS**: `paperand-${{ env.APP_VERSION }}.ipa`
             
             ### Installation
             #### Android
@@ -165,17 +167,13 @@ jobs:
             2. Enable "Install from unknown sources" in your device settings
             3. Open the APK file to install
             
-            #### iOS (TrollStore only)
-            > ⚠️ This is an unsigned simulator build. Regular sideloading (AltStore/Sideloadly) will NOT work.
-            > You need **TrollStore** or a jailbroken device.
-            
+            #### iOS
             1. Download the IPA file
-            2. Install via TrollStore
-            
-            For signed IPA builds, you need to build locally with Apple Developer credentials.
+            2. Use AltStore, Sideloadly, or TrollStore to install
+            3. Trust the developer in Settings → General → Device Management
             
             ---
-            *Built with Expo*
+            *Built with Expo & EAS*
           draft: false
           prerelease: ${{ contains(env.APP_VERSION, 'rc') || contains(env.APP_VERSION, 'alpha') || contains(env.APP_VERSION, 'beta') }}
           files: |
