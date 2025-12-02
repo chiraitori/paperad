@@ -35,13 +35,7 @@ export interface VersioningResponse {
 }
 
 // Default repositories - known repository URLs
-export const DEFAULT_REPOSITORIES: ExtensionRepository[] = [
-  {
-    id: 'pixiv',
-    name: 'Pixiv Paperback Extension',
-    baseUrl: 'https://chiraitori.github.io/paperback-extensions/main',
-  },
-];
+export const DEFAULT_REPOSITORIES: ExtensionRepository[] = [];
 
 // API Functions
 export const fetchRepositoryVersioning = async (baseUrl: string): Promise<VersioningResponse | null> => {

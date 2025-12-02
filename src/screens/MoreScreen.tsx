@@ -8,6 +8,7 @@ import {
   Switch,
   Linking,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeMode } from '../types';
 
@@ -66,9 +67,9 @@ export const MoreScreen: React.FC = () => {
           <View style={[styles.appIcon, { backgroundColor: theme.primary }]}>
             <Text style={styles.appIconText}>📚</Text>
           </View>
-          <Text style={[styles.appName, { color: theme.text }]}>Paperback</Text>
+          <Text style={[styles.appName, { color: theme.text }]}>Paperand</Text>
           <Text style={[styles.appVersion, { color: theme.textSecondary }]}>
-            Version 1.0.0
+            Version {Constants.expoConfig?.version || '0.0.3-rc'}
           </Text>
           <Text style={[styles.appTagline, { color: theme.textSecondary }]}>
             Ad-free Manga Reader

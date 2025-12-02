@@ -14,7 +14,7 @@ on:
         default: ''
 
 env:
-  APP_VERSION: ${{ github.event.inputs.version || '0.0.2-rc' }}
+  APP_VERSION: ${{ github.event.inputs.version || '0.0.3-rc' }}
 
 jobs:
   build-android:
@@ -105,7 +105,7 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build iOS Simulator App
+      - name: Build iOS App
         run: eas build --platform ios --profile preview --local --non-interactive --output ./build/paperand-ios-${{ env.APP_VERSION }}.tar.gz
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
