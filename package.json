@@ -19,6 +19,7 @@
     "expo-document-picker": "~14.0.7",
     "expo-file-system": "^19.0.19",
     "expo-image": "^3.0.10",
+    "expo-linear-gradient": "~15.0.7",
     "expo-linking": "~8.0.9",
     "expo-status-bar": "~3.0.8",
     "react": "19.1.0",

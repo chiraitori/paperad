@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { LoadingIndicator } from '../components';
-import { getViewMoreItems, SourceManga } from '../services/sourceService';
+import { getViewMoreItems, searchByTag, SourceManga } from '../services/sourceService';
 import { RootStackParamList } from '../types';
 
 type CategoryScreenRouteProp = RouteProp<RootStackParamList, 'Category'>;
@@ -31,7 +31,7 @@ export const CategoryScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<CategoryScreenNavigationProp>();
   const route = useRoute<CategoryScreenRouteProp>();
-  const { sourceId, sectionId, title, initialItems } = route.params;
+  const { sourceId, sectionId, title, initialItems, tagId } = route.params;
 
   const [results, setResults] = useState<SourceManga[]>(initialItems || []);
   const [loading, setLoading] = useState(initialItems?.length === 0);
@@ -61,11 +61,22 @@ export const CategoryScreen: React.FC = () => {
     }
 
     try {
-      const result = await getViewMoreItems(
-        sourceId,
-        sectionId,
-        isFirstLoad ? null : metadata
-      );
+      let result;
+      
+      // If we have a tagId, use searchByTag instead of getViewMoreItems
+      if (tagId) {
+        result = await searchByTag(
+          sourceId,
+          tagId,
+          isFirstLoad ? null : metadata
+        );
+      } else {
+        result = await getViewMoreItems(
+          sourceId,
+          sectionId,
+          isFirstLoad ? null : metadata
+        );
+      }
 
       // Check if we got any results
       if (result.results.length === 0) {

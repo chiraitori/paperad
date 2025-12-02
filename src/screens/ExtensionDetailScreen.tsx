@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,13 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { ExtensionSource } from '../services/extensionService';
+import { hasExtensionSettings } from '../services/sourceService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootStackParamList } from '../types';
 
 type RouteParams = {
   ExtensionDetail: {
@@ -22,22 +25,41 @@ type RouteParams = {
   };
 };
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ExtensionDetail'>;
+
 const INSTALLED_EXTENSIONS_KEY = '@installed_extensions_data';
 
 export const ExtensionDetailScreen: React.FC = () => {
   const { theme } = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<RouteParams, 'ExtensionDetail'>>();
   const { extension } = route.params;
 
   const [parallelChapterDownloads, setParallelChapterDownloads] = useState(1);
   const [parallelPageDownloads, setParallelPageDownloads] = useState(2);
   const [hideFromSearch, setHideFromSearch] = useState(false);
+  const [hasSettings, setHasSettings] = useState(false);
 
   // Build icon URL
   const iconUrl = extension.repoBaseUrl && extension.icon
     ? `${extension.repoBaseUrl}/${extension.id}/includes/${extension.icon}`
     : null;
+
+  // Check if extension has settings
+  useEffect(() => {
+    const checkSettings = async () => {
+      const result = await hasExtensionSettings(extension.id);
+      setHasSettings(result);
+    };
+    checkSettings();
+  }, [extension.id]);
+
+  const navigateToSettings = () => {
+    navigation.navigate('ExtensionSettings', {
+      extensionId: extension.id,
+      extensionName: extension.name,
+    });
+  };
 
   const handlePurgeFromLibrary = () => {
     Alert.alert(
@@ -192,6 +214,24 @@ export const ExtensionDetailScreen: React.FC = () => {
             </View>
           </View>
         </View>
+
+        {/* Source Settings - shown only if extension has settings */}
+        {hasSettings && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+              SOURCE SETTINGS
+            </Text>
+            <View style={[styles.sectionContent, { backgroundColor: theme.card }]}>
+              <TouchableOpacity style={styles.settingsRow} onPress={navigateToSettings}>
+                <Text style={[styles.settingsLabel, { color: theme.text }]}>Domain Settings</Text>
+                <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.resetButton]}>
+                <Text style={[styles.resetText, { color: theme.primary }]}>Reset to Default</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Download Manager Settings */}
         <View style={styles.section}>
@@ -378,6 +418,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   uninstallText: {
+    fontSize: 16,
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(128, 128, 128, 0.3)',
+  },
+  settingsLabel: {
+    fontSize: 16,
+  },
+  resetButton: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  resetText: {
     fontSize: 16,
   },
 });

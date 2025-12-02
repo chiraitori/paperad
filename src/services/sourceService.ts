@@ -22,7 +22,7 @@ export interface HomeSection {
   title: string;
   items: SourceManga[];
   containsMoreItems: boolean;
-  type?: string;
+  type?: 'singleRowNormal' | 'singleRowLarge' | 'doubleRow' | 'featured';
 }
 
 export interface Chapter {
@@ -43,6 +43,11 @@ export interface MangaDetails {
   desc?: string;
   status?: string;
   tags?: { id: string; label: string }[];
+}
+
+export interface Tag {
+  id: string;
+  label: string;
 }
 
 export interface InstalledExtension {
@@ -194,14 +199,13 @@ export const getHomeSections = async (extensionId: string): Promise<HomeSection[
     await waitForBridge(5000);
   }
 
-  // If still no bridge available, return webview fallback
+  // If still no bridge available, return empty fallback
   if (!extensionBridge) {
     return [{
       id: `${extensionId}-browse`,
       title: `Browse ${ext.name}`,
       items: [],
       containsMoreItems: false,
-      type: 'webview',
     }];
   }
 
@@ -212,7 +216,6 @@ export const getHomeSections = async (extensionId: string): Promise<HomeSection[
       title: `Browse ${ext.name}`,
       items: [],
       containsMoreItems: false,
-      type: 'webview',
     }];
   }
 
@@ -479,8 +482,320 @@ export const getChapterPages = async (
 };
 
 /**
+ * Get tags/genres from extension
+ */
+export const getTags = async (extensionId: string): Promise<Tag[]> => {
+  const extensions = await getInstalledExtensions();
+  const ext = extensions.find(e => e.id === extensionId);
+  
+  if (!ext) return [];
+
+  // Wait for bridge if not available
+  if (!extensionBridge) {
+    await waitForBridge(5000);
+  }
+  if (!extensionBridge) return [];
+
+  const loaded = await ensureExtensionLoaded(ext);
+  if (!loaded) return [];
+
+  try {
+    const result = await extensionBridge.runExtensionMethod(
+      extensionId,
+      'getSearchTags',
+      []
+    );
+    
+    if (!result || !Array.isArray(result)) return [];
+
+    // Flatten tag sections into a single list
+    const allTags: Tag[] = [];
+    for (const section of result) {
+      if (section.tags && Array.isArray(section.tags)) {
+        for (const tag of section.tags) {
+          allTags.push({
+            id: tag.id || '',
+            label: tag.label || tag.title || '',
+          });
+        }
+      }
+    }
+    
+    return allTags;
+  } catch (error: any) {
+    // Silently return empty array if method doesn't exist (not all extensions support tags)
+    if (error?.message?.includes('Method not found')) {
+      return [];
+    }
+    console.error(`Error getting tags for ${extensionId}:`, error);
+    return [];
+  }
+};
+
+/**
+ * Search manga by tag/genre
+ */
+export const searchByTag = async (
+  extensionId: string,
+  tagId: string,
+  metadata?: any
+): Promise<SearchResult> => {
+  const extensions = await getInstalledExtensions();
+  const ext = extensions.find(e => e.id === extensionId);
+  
+  if (!ext) return { results: [], metadata: null };
+
+  // Wait for bridge if not available
+  if (!extensionBridge) {
+    await waitForBridge(5000);
+  }
+  if (!extensionBridge) return { results: [], metadata: null };
+
+  const loaded = await ensureExtensionLoaded(ext);
+  if (!loaded) return { results: [], metadata: null };
+
+  try {
+    const result = await extensionBridge.runExtensionMethod(
+      extensionId,
+      'getSearchResults',
+      [{ title: '', includedTags: [{ id: tagId, label: '' }] }, metadata]
+    );
+    
+    if (!result || !result.results) return { results: [], metadata: null };
+
+    const mangaResults = result.results.map((item: any) => ({
+      id: item.mangaId || item.id,
+      mangaId: item.mangaId || item.id,
+      title: item.title || '',
+      image: item.image || '',
+      subtitle: item.subtitle || '',
+      extensionId,
+    }));
+
+    return {
+      results: mangaResults,
+      metadata: result.metadata || null,
+    };
+  } catch (error) {
+    console.error(`searchByTag error for ${extensionId}/${tagId}:`, error);
+    return { results: [], metadata: null };
+  }
+};
+
+/**
  * Clear extension cache
  */
 export const clearExtensionCache = () => {
   // Will be implemented by the WebView bridge
+};
+
+// Extension Settings Types
+export interface DUIRow {
+  id: string;
+  type: 'navigation' | 'button' | 'select' | 'switch' | 'input' | 'secureInput' | 'label' | 'stepper';
+  label: string;
+  value?: any;
+  options?: string[];
+  optionLabels?: string[]; // Resolved labels for select options
+  form?: DUISection[];
+  onTap?: () => Promise<void>;
+  labelResolver?: (option: string) => Promise<string>;
+  allowsMultiselect?: boolean;
+  minValue?: number;
+  maxValue?: number;
+  step?: number;
+  hasOnTap?: boolean; // For button rows
+}
+
+export interface DUISection {
+  id: string;
+  header?: string;
+  footer?: string;
+  rows: DUIRow[];
+  isHidden?: boolean;
+}
+
+export interface ExtensionSettings {
+  id: string;
+  header?: string;
+  sections: DUISection[];
+}
+
+const EXTENSION_STATE_PREFIX = '@extension_state_';
+
+/**
+ * Get extension state from storage
+ */
+export const getExtensionState = async (extensionId: string, key: string): Promise<any> => {
+  try {
+    const storageKey = `${EXTENSION_STATE_PREFIX}${extensionId}_${key}`;
+    const value = await AsyncStorage.getItem(storageKey);
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    console.error(`Error getting extension state for ${extensionId}/${key}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Set extension state to storage
+ */
+export const setExtensionState = async (extensionId: string, key: string, value: any): Promise<void> => {
+  try {
+    const storageKey = `${EXTENSION_STATE_PREFIX}${extensionId}_${key}`;
+    await AsyncStorage.setItem(storageKey, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Error setting extension state for ${extensionId}/${key}:`, error);
+  }
+};
+
+/**
+ * Check if extension has settings UI
+ */
+export const hasExtensionSettings = async (extensionId: string): Promise<boolean> => {
+  const extensions = await getInstalledExtensions();
+  const ext = extensions.find(e => e.id === extensionId);
+  
+  if (!ext) return false;
+
+  // Wait for bridge if not available
+  if (!extensionBridge) {
+    await waitForBridge(5000);
+  }
+  if (!extensionBridge) return false;
+
+  const loaded = await ensureExtensionLoaded(ext);
+  if (!loaded) return false;
+
+  try {
+    // Try calling getSourceMenu - if it exists, the extension has settings
+    const result = await extensionBridge.runExtensionMethod(
+      extensionId,
+      'getSourceMenu',
+      []
+    );
+    return result !== null && result !== undefined;
+  } catch (error: any) {
+    // Method not found means no settings
+    if (error?.message?.includes('Method not found')) {
+      return false;
+    }
+    return false;
+  }
+};
+
+/**
+ * Get extension settings menu - the WebView already resolves all async functions
+ */
+export const getExtensionSettings = async (extensionId: string): Promise<ExtensionSettings | null> => {
+  const extensions = await getInstalledExtensions();
+  const ext = extensions.find(e => e.id === extensionId);
+  
+  if (!ext) return null;
+
+  // Wait for bridge if not available
+  if (!extensionBridge) {
+    await waitForBridge(5000);
+  }
+  if (!extensionBridge) return null;
+
+  const loaded = await ensureExtensionLoaded(ext);
+  if (!loaded) return null;
+
+  try {
+    // The WebView's getSourceMenu handler resolves all async functions
+    const result = await extensionBridge.runExtensionMethod(
+      extensionId,
+      'getSourceMenu',
+      []
+    );
+    
+    if (!result) return null;
+
+    // Result is already resolved with structure like:
+    // { id, header, isHidden, rows: [{ id, label, type, form?, value?, options?, optionLabels? }] }
+    return {
+      id: result.id || 'main',
+      header: result.header || 'Source Settings',
+      sections: [{
+        id: result.id || 'main',
+        header: result.header,
+        rows: result.rows || [],
+        isHidden: result.isHidden,
+      }],
+    };
+  } catch (error: any) {
+    if (error?.message?.includes('Method not found')) {
+      return null;
+    }
+    console.error(`Error getting extension settings for ${extensionId}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Update extension setting value through the extension's binding
+ */
+export const updateExtensionSetting = async (
+  extensionId: string,
+  settingPath: string,
+  value: any
+): Promise<boolean> => {
+  const extensions = await getInstalledExtensions();
+  const ext = extensions.find(e => e.id === extensionId);
+  
+  if (!ext) return false;
+
+  if (!extensionBridge) {
+    await waitForBridge(5000);
+  }
+  if (!extensionBridge) return false;
+
+  const loaded = await ensureExtensionLoaded(ext);
+  if (!loaded) return false;
+
+  try {
+    const result = await extensionBridge.runExtensionMethod(
+      extensionId,
+      'setSettingValue',
+      [settingPath, value]
+    );
+    return result === true;
+  } catch (error) {
+    console.error(`Error updating setting ${settingPath} for ${extensionId}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Invoke a button action in extension settings
+ */
+export const invokeExtensionSettingAction = async (
+  extensionId: string,
+  settingPath: string
+): Promise<boolean> => {
+  const extensions = await getInstalledExtensions();
+  const ext = extensions.find(e => e.id === extensionId);
+  
+  if (!ext) return false;
+
+  if (!extensionBridge) {
+    await waitForBridge(5000);
+  }
+  if (!extensionBridge) return false;
+
+  const loaded = await ensureExtensionLoaded(ext);
+  if (!loaded) return false;
+
+  try {
+    const result = await extensionBridge.runExtensionMethod(
+      extensionId,
+      'invokeSettingAction',
+      [settingPath]
+    );
+    return result === true;
+  } catch (error) {
+    console.error(`Error invoking setting action ${settingPath} for ${extensionId}:`, error);
+    return false;
+  }
 };

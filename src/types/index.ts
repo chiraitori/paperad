@@ -90,13 +90,15 @@ export type RootStackParamList = {
   Backups: undefined;
   Extensions: undefined;
   ExtensionDetail: { extension: any };
+  ExtensionSettings: { extensionId: string; extensionName: string };
   AddRepository: undefined;
   BrowseAllRepositories: undefined;
   BrowseRepository: { repoId: string; repoName: string; repoBaseUrl: string };
   Developer: undefined;
   Credits: undefined;
-  Category: { sourceId: string; sectionId: string; title: string; initialItems?: any[] };
+  Category: { sourceId: string; sectionId: string; title: string; initialItems?: any[]; tagId?: string };
   SearchResults: { sourceId: string; sourceName: string; query: string; initialItems?: any[] };
+  GenreList: { sourceId: string; tags: { id: string; label: string }[] };
 };
 
 export type BottomTabParamList = {
