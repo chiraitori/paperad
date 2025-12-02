@@ -4,12 +4,10 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g., 0.0.2-rc)'
+        description: 'Version to build (e.g., 0.0.3-rc)'
         required: false
         default: ''
 
@@ -106,16 +104,17 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build iOS App
-        run: eas build --platform ios --profile preview --local --non-interactive --output ./build/paperand-ios-${{ env.APP_VERSION }}.tar.gz
+        run: eas build --platform ios --profile preview --local --non-interactive --output ./build/paperand-ios-${{ env.APP_VERSION }}.app
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Extract and Create IPA
+      - name: Create IPA from App
         run: |
-          mkdir -p ./build/Payload
-          tar -xzf ./build/paperand-ios-${{ env.APP_VERSION }}.tar.gz -C ./build/Payload
-          cd ./build && zip -r paperand-${{ env.APP_VERSION }}.ipa Payload
-          rm -rf Payload paperand-ios-${{ env.APP_VERSION }}.tar.gz
+          cd ./build
+          mkdir -p Payload
+          mv paperand-ios-${{ env.APP_VERSION }}.app Payload/ 2>/dev/null || mv *.app Payload/
+          zip -r paperand-${{ env.APP_VERSION }}.ipa Payload
+          rm -rf Payload
 
       - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
@@ -157,7 +156,7 @@ jobs:
             
             ### Downloads
             - **Android**: `paperand-${{ env.APP_VERSION }}.apk`
-            - **iOS**: `paperand-${{ env.APP_VERSION }}.ipa` (requires sideloading via AltStore/Sideloadly)
+            - **iOS**: `paperand-${{ env.APP_VERSION }}.ipa`
             
             ### Installation
             #### Android
@@ -167,8 +166,8 @@ jobs:
             
             #### iOS
             1. Download the IPA file
-            2. Use AltStore, Sideloadly, or similar tool to sideload
-            3. Trust the developer certificate in Settings > General > Device Management
+            2. Use AltStore, Sideloadly, or TrollStore to install
+            3. Trust the developer certificate in Settings if needed
             
             ---
             *Built with Expo*

@@ -20,6 +20,13 @@
         "credentialsSource": "local"
       },
       "ios": {
+        "simulator": false,
+        "resourceClass": "m1-medium"
+      }
+    },
+    "preview-simulator": {
+      "distribution": "internal",
+      "ios": {
         "simulator": true
       }
     },
