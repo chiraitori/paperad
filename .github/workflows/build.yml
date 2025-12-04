@@ -80,7 +80,7 @@ jobs:
           EOF
 
       - name: Build Android APK
-        run: eas build --platform android --profile preview --local --non-interactive --output ./build/paperad-${{ steps.version.outputs.version }}.apk
+        run: eas build --platform android --profile preview --local --non-interactive --output ./build/paperand-${{ steps.version.outputs.version }}.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -88,7 +88,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: ./build/paperad-${{ steps.version.outputs.version }}.apk
+          path: ./build/paperand-${{ steps.version.outputs.version }}.apk
           retention-days: 30
 
   # iOS builds are handled by Codemagic (see codemagic.yaml)
@@ -130,7 +130,7 @@ jobs:
           cat > release_notes.md << 'NOTES_EOF'
           <div align="center">
           
-          # 📱 Paperad v${{ needs.build-android.outputs.version }}
+          # 📱 Paperand v${{ needs.build-android.outputs.version }}
           
           ### _Ad-Free Manga Reader for iOS & Android_
           
@@ -156,7 +156,7 @@ jobs:
           
           | Platform | File | Installation |
           |----------|------|--------------|
-          | 🤖 **Android** | `paperad-${{ needs.build-android.outputs.version }}.apk` | Direct install |
+          | 🤖 **Android** | `paperand-${{ needs.build-android.outputs.version }}.apk` | Direct install |
           | 🍎 **iOS** | See Codemagic | Sideload required |
           
           ---
@@ -169,7 +169,7 @@ jobs:
           1. Download the APK file from assets below
           2. Enable **"Install from unknown sources"** in Settings
           3. Open the downloaded APK to install
-          4. Launch Paperad and enjoy! 🎉
+          4. Launch Paperand and enjoy! 🎉
           
           </details>
           
@@ -206,9 +206,9 @@ jobs:
           
           <div align="center">
           
-          **Made with ❤️ by the Paperad Team**
+          **Made with ❤️ by the Paperand Team**
           
-          [Report Bug](https://github.com/chiraitori/paperad/issues) · [Request Feature](https://github.com/chiraitori/paperad/issues)
+          [Report Bug](https://github.com/chiraitori/paperand/issues) · [Request Feature](https://github.com/chiraitori/paperand/issues)
           
           </div>
           NOTES_EOF
@@ -217,11 +217,11 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.build-android.outputs.version }}
-          name: 📱 Paperad v${{ needs.build-android.outputs.version }}
+          name: 📱 Paperand v${{ needs.build-android.outputs.version }}
           body_path: release_notes.md
           draft: false
           prerelease: ${{ contains(needs.build-android.outputs.version, 'rc') || contains(needs.build-android.outputs.version, 'alpha') || contains(needs.build-android.outputs.version, 'beta') }}
           files: |
-            ./release/paperad-${{ needs.build-android.outputs.version }}.apk
+            ./release/paperand-${{ needs.build-android.outputs.version }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -70,7 +70,7 @@ workflows:
           mkdir -p $CM_BUILD_DIR/Payload
           cp -r $CM_BUILD_DIR/build.xcarchive/Products/Applications/*.app $CM_BUILD_DIR/Payload/
           cd $CM_BUILD_DIR
-          zip -r paperad-${APP_VERSION}.ipa Payload
+          zip -r paperand-${APP_VERSION}.ipa Payload
           rm -rf Payload
     
     artifacts:
@@ -102,7 +102,7 @@ workflows:
             
             # Get the release by tag
             RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-              "https://api.github.com/repos/chiraitori/paperad/releases/tags/$CM_TAG")
+              "https://api.github.com/repos/chiraitori/paperand/releases/tags/$CM_TAG")
             
             RELEASE_ID=$(echo "$RELEASE_INFO" | jq -r '.id')
             
@@ -112,8 +112,8 @@ workflows:
               RELEASE_INFO=$(curl -s -X POST \
                 -H "Authorization: token $GITHUB_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d "{\"tag_name\": \"$CM_TAG\", \"name\": \"📱 Paperad ${CM_TAG#v}\", \"prerelease\": true}" \
-                "https://api.github.com/repos/chiraitori/paperad/releases")
+                -d "{\"tag_name\": \"$CM_TAG\", \"name\": \"📱 Paperand ${CM_TAG#v}\", \"prerelease\": true}" \
+                "https://api.github.com/repos/chiraitori/paperand/releases")
               RELEASE_ID=$(echo "$RELEASE_INFO" | jq -r '.id')
             fi
             
@@ -124,6 +124,6 @@ workflows:
               -H "Authorization: token $GITHUB_TOKEN" \
               -H "Content-Type: application/octet-stream" \
               --data-binary @"$IPA_FILE" \
-              "https://uploads.github.com/repos/chiraitori/paperad/releases/$RELEASE_ID/assets?name=$IPA_NAME"
+              "https://uploads.github.com/repos/chiraitori/paperand/releases/$RELEASE_ID/assets?name=$IPA_NAME"
             
             echo "✅ IPA uploaded successfully!"
