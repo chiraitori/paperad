@@ -7,20 +7,33 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g., 0.0.3-rc)'
+        description: 'Version to build (e.g., 0.0.4-rc)'
         required: false
         default: ''
-
-env:
-  APP_VERSION: ${{ github.event.inputs.version || '0.0.3-rc' }}
 
 jobs:
   build-android:
     name: Build Android
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+          else
+            VERSION="dev"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -67,7 +80,7 @@ jobs:
           EOF
 
       - name: Build Android APK
-        run: eas build --platform android --profile preview --local --non-interactive --output ./build/paperand-${{ env.APP_VERSION }}.apk
+        run: eas build --platform android --profile preview --local --non-interactive --output ./build/paperad-${{ steps.version.outputs.version }}.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -75,7 +88,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: ./build/paperand-${{ env.APP_VERSION }}.apk
+          path: ./build/paperad-${{ steps.version.outputs.version }}.apk
           retention-days: 30
 
   # iOS builds are handled by Codemagic (see codemagic.yaml)
@@ -91,6 +104,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download Android Artifact
         uses: actions/download-artifact@v4
@@ -98,33 +113,115 @@ jobs:
           name: android-apk
           path: ./release
 
+      - name: Generate Release Notes
+        id: notes
+        run: |
+          VERSION="${{ needs.build-android.outputs.version }}"
+          
+          # Get commit messages since last tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" $PREV_TAG..HEAD 2>/dev/null || echo "- Initial release")
+          else
+            COMMITS="- Initial release"
+          fi
+          
+          # Save to file to preserve formatting
+          cat > release_notes.md << 'NOTES_EOF'
+          <div align="center">
+          
+          # 📱 Paperad v${{ needs.build-android.outputs.version }}
+          
+          ### _Ad-Free Manga Reader for iOS & Android_
+          
+          <img src="https://img.shields.io/badge/version-${{ needs.build-android.outputs.version }}-blue?style=for-the-badge" alt="Version"/>
+          <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-green?style=for-the-badge" alt="Platform"/>
+          <img src="https://img.shields.io/badge/built%20with-Expo-4630EB?style=for-the-badge" alt="Built with Expo"/>
+          
+          </div>
+          
+          ---
+          
+          ## ✨ What's New
+          
+          NOTES_EOF
+          
+          echo "$COMMITS" >> release_notes.md
+          
+          cat >> release_notes.md << 'NOTES_EOF'
+          
+          ---
+          
+          ## 📥 Downloads
+          
+          | Platform | File | Installation |
+          |----------|------|--------------|
+          | 🤖 **Android** | `paperad-${{ needs.build-android.outputs.version }}.apk` | Direct install |
+          | 🍎 **iOS** | See Codemagic | Sideload required |
+          
+          ---
+          
+          ## 🚀 Installation Guide
+          
+          <details>
+          <summary><b>📱 Android Installation</b></summary>
+          
+          1. Download the APK file from assets below
+          2. Enable **"Install from unknown sources"** in Settings
+          3. Open the downloaded APK to install
+          4. Launch Paperad and enjoy! 🎉
+          
+          </details>
+          
+          <details>
+          <summary><b>🍎 iOS Installation (Sideloading)</b></summary>
+          
+          iOS builds are created via **Codemagic CI** (unsigned IPA).
+          
+          **Option 1: TrollStore** _(Recommended for iOS 14.0-16.6.1)_
+          - Install TrollStore using [this guide](https://github.com/opa334/TrollStore)
+          - Download IPA from Codemagic artifacts
+          - Open IPA with TrollStore
+          
+          **Option 2: AltStore/Sideloadly**
+          - Download [AltStore](https://altstore.io/) or [Sideloadly](https://sideloadly.io/)
+          - Connect device to computer
+          - Sideload the IPA file
+          - Trust developer profile in Settings > General > Device Management
+          
+          </details>
+          
+          ---
+          
+          ## 💡 Features
+          
+          - 📚 **Extension-based** manga sources
+          - 🌙 **Dark/Light themes**
+          - 📖 **Vertical & Horizontal** reading modes
+          - 🔖 **Library & Bookmarks** management
+          - 🔍 **Multi-source search**
+          - 📱 **Paperback-style UI**
+          
+          ---
+          
+          <div align="center">
+          
+          **Made with ❤️ by the Paperad Team**
+          
+          [Report Bug](https://github.com/chiraitori/paperad/issues) · [Request Feature](https://github.com/chiraitori/paperad/issues)
+          
+          </div>
+          NOTES_EOF
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ env.APP_VERSION }}
-          name: Paperand v${{ env.APP_VERSION }}
-          body: |
-            ## Paperand v${{ env.APP_VERSION }}
-            
-            ### Downloads
-            - **Android**: `paperand-${{ env.APP_VERSION }}.apk`
-            - **iOS**: See Codemagic builds or build locally
-            
-            ### Installation
-            #### Android
-            1. Download the APK file
-            2. Enable "Install from unknown sources" in your device settings
-            3. Open the APK file to install
-            
-            #### iOS
-            iOS IPA is built via Codemagic CI (unsigned).
-            Sideload using AltStore, Sideloadly, or TrollStore.
-            
-            ---
-            *Built with Expo*
+          tag_name: v${{ needs.build-android.outputs.version }}
+          name: 📱 Paperad v${{ needs.build-android.outputs.version }}
+          body_path: release_notes.md
           draft: false
-          prerelease: ${{ contains(env.APP_VERSION, 'rc') || contains(env.APP_VERSION, 'alpha') || contains(env.APP_VERSION, 'beta') }}
+          prerelease: ${{ contains(needs.build-android.outputs.version, 'rc') || contains(needs.build-android.outputs.version, 'alpha') || contains(needs.build-android.outputs.version, 'beta') }}
           files: |
-            ./release/paperand-${{ env.APP_VERSION }}.apk
+            ./release/paperad-${{ needs.build-android.outputs.version }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

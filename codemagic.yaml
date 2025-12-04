@@ -8,8 +8,9 @@ workflows:
       node: 20
       xcode: latest
       cocoapods: default
+      groups:
+        - github_credentials
       vars:
-        APP_VERSION: "0.0.3-rc"
         EXPO_TOKEN: $EXPO_TOKEN
     
     triggering:
@@ -21,6 +22,13 @@ workflows:
       cancel_previous_builds: true
     
     scripts:
+      - name: Set version from tag
+        script: |
+          # Extract version from tag (remove 'v' prefix)
+          APP_VERSION=${CM_TAG#v}
+          echo "Building version: $APP_VERSION"
+          echo "APP_VERSION=$APP_VERSION" >> $CM_ENV
+          
       - name: Install dependencies
         script: |
           npm ci
@@ -62,7 +70,7 @@ workflows:
           mkdir -p $CM_BUILD_DIR/Payload
           cp -r $CM_BUILD_DIR/build.xcarchive/Products/Applications/*.app $CM_BUILD_DIR/Payload/
           cd $CM_BUILD_DIR
-          zip -r paperand-${APP_VERSION}.ipa Payload
+          zip -r paperad-${APP_VERSION}.ipa Payload
           rm -rf Payload
     
     artifacts:
@@ -71,7 +79,12 @@ workflows:
     publishing:
       email:
         recipients:
-          - chiraitori@gmail.com
+          - chiraitori.dev@gmail.com
         notify:
           success: true
           failure: true
+      
+      github_releases:
+        - name: Paperad Release
+          prerelease: true
+          draft: false
