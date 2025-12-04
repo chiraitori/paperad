@@ -84,7 +84,46 @@ workflows:
           success: true
           failure: true
       
-      github_releases:
-        - name: Paperad Release
-          prerelease: true
-          draft: false
+      scripts:
+        - name: Upload IPA to existing GitHub Release
+          script: |
+            # Wait a bit for GitHub Actions to create the release first
+            sleep 60
+            
+            # Find the IPA file
+            IPA_FILE=$(find $CM_BUILD_DIR -name "*.ipa" -type f | head -1)
+            if [ -z "$IPA_FILE" ]; then
+              echo "No IPA file found!"
+              exit 1
+            fi
+            
+            IPA_NAME=$(basename "$IPA_FILE")
+            echo "Uploading $IPA_NAME to release $CM_TAG"
+            
+            # Get the release by tag
+            RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/chiraitori/paperad/releases/tags/$CM_TAG")
+            
+            RELEASE_ID=$(echo "$RELEASE_INFO" | jq -r '.id')
+            
+            if [ "$RELEASE_ID" == "null" ] || [ -z "$RELEASE_ID" ]; then
+              echo "Release not found for tag $CM_TAG, creating new one..."
+              # Create a new release if not exists
+              RELEASE_INFO=$(curl -s -X POST \
+                -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"tag_name\": \"$CM_TAG\", \"name\": \"📱 Paperad ${CM_TAG#v}\", \"prerelease\": true}" \
+                "https://api.github.com/repos/chiraitori/paperad/releases")
+              RELEASE_ID=$(echo "$RELEASE_INFO" | jq -r '.id')
+            fi
+            
+            echo "Release ID: $RELEASE_ID"
+            
+            # Upload the IPA to the release
+            curl -s -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$IPA_FILE" \
+              "https://uploads.github.com/repos/chiraitori/paperad/releases/$RELEASE_ID/assets?name=$IPA_NAME"
+            
+            echo "✅ IPA uploaded successfully!"
