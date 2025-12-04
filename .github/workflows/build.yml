@@ -134,7 +134,7 @@ jobs:
           
           ### _Ad-Free Manga Reader for iOS & Android_
           
-          <img src="https://img.shields.io/badge/version-${{ needs.build-android.outputs.version }}-blue?style=for-the-badge" alt="Version"/>
+          <img src="https://img.shields.io/badge/version-${{ needs.build-android.outputs.version && needs.build-android.outputs.version.replace('-', '--') }}-blue?style=for-the-badge" alt="Version"/>
           <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-green?style=for-the-badge" alt="Platform"/>
           <img src="https://img.shields.io/badge/built%20with-Expo-4630EB?style=for-the-badge" alt="Built with Expo"/>
           
