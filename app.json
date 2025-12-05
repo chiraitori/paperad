@@ -2,7 +2,7 @@
   "expo": {
     "name": "Paperand",
     "slug": "paperback-android",
-    "version": "0.0.5-rc",
+    "version": "0.0.4-rc",
     "scheme": "paperand",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

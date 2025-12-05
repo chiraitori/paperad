@@ -5,13 +5,17 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { LibraryProvider } from './src/context/LibraryContext';
 import { AppNavigator } from './src/navigation';
-import { ExtensionRunner } from './src/components';
+import { ExtensionRunner, UpdateModal } from './src/components';
 import {
   parseDeepLink,
   addRepositoryFromDeepLink,
   getInitialDeepLink,
   subscribeToDeepLinks,
 } from './src/services/deepLinkService';
+import {
+  checkForUpdate,
+  ReleaseInfo,
+} from './src/services/updateService';
 
 const handleDeepLink = async (url: string) => {
   const action = parseDeepLink(url);
@@ -31,6 +35,35 @@ const handleDeepLink = async (url: string) => {
 };
 
 export default function App() {
+  // Update modal state
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  const [currentVersion, setCurrentVersion] = useState('');
+  const [latestRelease, setLatestRelease] = useState<ReleaseInfo | null>(null);
+
+  // Check for updates on app start
+  useEffect(() => {
+    const performUpdateCheck = async () => {
+      try {
+        console.log('Checking for updates...');
+        const result = await checkForUpdate(true); // force=true to bypass cache
+        console.log('Update check result:', JSON.stringify(result, null, 2));
+        if (result.hasUpdate && result.latestRelease) {
+          setCurrentVersion(result.currentVersion);
+          setLatestRelease(result.latestRelease);
+          setUpdateModalVisible(true);
+        } else if (result.error) {
+          console.error('Update check error:', result.error);
+        }
+      } catch (error) {
+        console.error('Update check failed:', error);
+      }
+    };
+
+    // Delay update check slightly to let app initialize
+    const timer = setTimeout(performUpdateCheck, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     // Handle initial deep link (app launched from URL)
     getInitialDeepLink().then((url) => {
@@ -54,6 +87,15 @@ export default function App() {
           <StatusBar style="auto" />
           <AppNavigator />
           <ExtensionRunner />
+          {latestRelease && (
+            <UpdateModal
+              visible={updateModalVisible}
+              currentVersion={currentVersion}
+              releaseInfo={latestRelease}
+              onClose={() => setUpdateModalVisible(false)}
+              onSkip={() => setUpdateModalVisible(false)}
+            />
+          )}
         </LibraryProvider>
       </ThemeProvider>
     </SafeAreaProvider>
