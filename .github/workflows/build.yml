@@ -2,8 +2,6 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
       - '[0-9]*'
@@ -95,9 +93,6 @@ jobs:
           path: ./build/paperand-${{ steps.version.outputs.version }}.apk
           retention-days: 30
 
-  # iOS builds are handled by Codemagic (see codemagic.yaml)
-  # Codemagic builds unsigned IPA without Apple Developer account
-
   release:
     name: Create Release
     needs: [build-android]
@@ -121,10 +116,8 @@ jobs:
         id: notes
         run: |
           VERSION="${{ needs.build-android.outputs.version }}"
-          # Escape hyphens for shields.io badge (- becomes --)
           VERSION_BADGE="${VERSION//-/--}"
           
-          # Get commit messages since last tag
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
             COMMITS=$(git log --pretty=format:"- %s" $PREV_TAG..HEAD 2>/dev/null || echo "- Initial release")
@@ -132,17 +125,12 @@ jobs:
             COMMITS="- Initial release"
           fi
           
-          # Save to file to preserve formatting
           cat > release_notes.md << 'NOTES_EOF'
           <div align="center">
           
           # 📱 Paperand v${{ needs.build-android.outputs.version }}
           
           ### _Ad-Free Manga Reader for iOS & Android_
-          
-          <img src="https://img.shields.io/badge/version-${VERSION_BADGE}-blue?style=for-the-badge" alt="Version"/>
-          <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-green?style=for-the-badge" alt="Platform"/>
-          <img src="https://img.shields.io/badge/built%20with-Expo-4630EB?style=for-the-badge" alt="Built with Expo"/>
           
           </div>
           
@@ -167,54 +155,9 @@ jobs:
           
           ---
           
-          ## 🚀 Installation Guide
-          
-          <details>
-          <summary><b>📱 Android Installation</b></summary>
-          
-          1. Download the APK file from assets below
-          2. Enable **"Install from unknown sources"** in Settings
-          3. Open the downloaded APK to install
-          4. Launch Paperand and enjoy! 🎉
-          
-          </details>
-          
-          <details>
-          <summary><b>🍎 iOS Installation (Sideloading)</b></summary>
-          
-          iOS builds are created via **Codemagic CI** (unsigned IPA).
-          
-          **Option 1: TrollStore** _(Recommended for iOS 14.0-16.6.1)_
-          - Install TrollStore using [this guide](https://github.com/opa334/TrollStore)
-          - Download IPA from Codemagic artifacts
-          - Open IPA with TrollStore
-          
-          **Option 2: AltStore/Sideloadly**
-          - Download [AltStore](https://altstore.io/) or [Sideloadly](https://sideloadly.io/)
-          - Connect device to computer
-          - Sideload the IPA file
-          - Trust developer profile in Settings > General > Device Management
-          
-          </details>
-          
-          ---
-          
-          ## 💡 Features
-          
-          - 📚 **Extension-based** manga sources
-          - 🌙 **Dark/Light themes**
-          - 📖 **Vertical & Horizontal** reading modes
-          - 🔖 **Library & Bookmarks** management
-          - 🔍 **Multi-source search**
-          - 📱 **Paperback-style UI**
-          
-          ---
-          
           <div align="center">
           
           **Made with ❤️ by chiraitori**
-          
-          [Report Bug](https://github.com/chiraitori/paperand/issues) · [Request Feature](https://github.com/chiraitori/paperand/issues)
           
           </div>
           NOTES_EOF
