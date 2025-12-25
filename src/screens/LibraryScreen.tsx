@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useTheme } from '../context/ThemeContext';
 import { useLibrary } from '../context/LibraryContext';
 import { MangaCard, EmptyState, MangaPreviewModal } from '../components';
@@ -35,18 +37,50 @@ export const LibraryScreen: React.FC = () => {
   const [previewManga, setPreviewManga] = useState<Manga | null>(null);
   const [previewSourceId, setPreviewSourceId] = useState<string | undefined>();
 
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
   // Determine orientation and get appropriate column count
   const isLandscape = width > height;
   const numColumns = isLandscape ? settings.landscapeColumns : settings.portraitColumns;
 
-  // Load settings when screen is focused
+  // Load settings and check auth when screen is focused
   useFocusEffect(
     useCallback(() => {
-      const loadSettings = async () => {
+      const loadAndCheckAuth = async () => {
         const loadedSettings = await getGeneralSettings();
         setSettings(loadedSettings);
+
+        if (loadedSettings.libraryAuth) {
+          // Require authentication
+          const hasHardware = await LocalAuthentication.hasHardwareAsync();
+          const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+          if (hasHardware && isEnrolled) {
+            const result = await LocalAuthentication.authenticateAsync({
+              promptMessage: 'Authenticate to view Library',
+              fallbackLabel: 'Use Passcode',
+              disableDeviceFallback: false,
+            });
+
+            setIsAuthenticated(result.success);
+          } else {
+            // No biometric, allow access
+            setIsAuthenticated(true);
+          }
+        } else {
+          setIsAuthenticated(true);
+        }
+        setAuthChecked(true);
       };
-      loadSettings();
+      loadAndCheckAuth();
+
+      // Reset auth when leaving screen
+      return () => {
+        setIsAuthenticated(false);
+        setAuthChecked(false);
+      };
     }, [])
   );
 
@@ -120,6 +154,59 @@ export const LibraryScreen: React.FC = () => {
       columns={numColumns}
     />
   );
+
+  const handleRetryAuth = async () => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+    if (hasHardware && isEnrolled) {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to view Library',
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+      });
+
+      setIsAuthenticated(result.success);
+    }
+  };
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>Library</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show locked state if auth required but not authenticated
+  if (settings.libraryAuth && !isAuthenticated) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>Library</Text>
+        </View>
+        <View style={styles.lockedContainer}>
+          <Ionicons name="lock-closed" size={64} color={theme.textSecondary} />
+          <Text style={[styles.lockedTitle, { color: theme.text }]}>
+            Library is Locked
+          </Text>
+          <Text style={[styles.lockedDescription, { color: theme.textSecondary }]}>
+            Authenticate to view your manga library
+          </Text>
+          <TouchableOpacity
+            style={[styles.unlockButton, { backgroundColor: theme.primary }]}
+            onPress={handleRetryAuth}
+          >
+            <Ionicons name="finger-print" size={20} color="#fff" />
+            <Text style={styles.unlockButtonText}>Unlock</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -239,5 +326,35 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     gap: 8,
     marginBottom: 4,
+  },
+  lockedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  lockedTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  lockedDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  unlockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  unlockButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

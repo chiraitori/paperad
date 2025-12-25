@@ -17,6 +17,10 @@ import {
   checkForUpdate,
   ReleaseInfo,
 } from './src/services/updateService';
+import { initLogCapture } from './src/services/developerService';
+
+// Initialize log capture immediately so all logs are captured from startup
+initLogCapture();
 
 const SETTINGS_KEY = '@general_settings';
 
