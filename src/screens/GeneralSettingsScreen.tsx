@@ -23,7 +23,9 @@ interface GeneralSettings {
     chapterListSort: 'ascending' | 'descending';
     interactiveUpdates: boolean;
     libraryAuth: boolean;
+    historyAuth: boolean;
     hideUpdateModal: boolean;
+    mangaPreviewEnabled: boolean; // Long-press preview popup
 }
 
 const defaultSettings: GeneralSettings = {
@@ -32,7 +34,9 @@ const defaultSettings: GeneralSettings = {
     chapterListSort: 'descending',
     interactiveUpdates: false,
     libraryAuth: false,
+    historyAuth: false,
     hideUpdateModal: false,
+    mangaPreviewEnabled: Platform.OS === 'ios', // Default: enabled on iOS, disabled on Android
 };
 
 export const GeneralSettingsScreen: React.FC = () => {
@@ -269,8 +273,19 @@ export const GeneralSettingsScreen: React.FC = () => {
                                 />
                             )
                         })}
+                        {renderItem({
+                            title: 'History Requires Authentication',
+                            rightElement: (
+                                <Switch
+                                    value={settings.historyAuth}
+                                    onValueChange={(value) => updateSetting('historyAuth', value)}
+                                    trackColor={{ false: theme.border, true: theme.success }}
+                                    thumbColor={'#FFFFFF'}
+                                />
+                            )
+                        })}
                     </View>
-                    {renderFooter('Ask for Pin/TouchID/FaceID when opening library')}
+                    {renderFooter('Ask for Pin/TouchID/FaceID when opening Library or History')}
                 </View>
 
                 {/* Update Checking */}
@@ -290,6 +305,27 @@ export const GeneralSettingsScreen: React.FC = () => {
                         })}
                     </View>
                     {renderFooter('When enabled, the app will not show update notifications on startup')}
+                </View>
+
+                {/* Manga Preview */}
+                <View style={styles.section}>
+                    {renderSectionHeader('MANGA PREVIEW')}
+                    <View style={[styles.sectionContent, { backgroundColor: theme.card }]}>
+                        {renderItem({
+                            title: Platform.OS === 'android' ? 'Preview on Long Press (Experimental)' : 'Preview on Long Press',
+                            rightElement: (
+                                <Switch
+                                    value={settings.mangaPreviewEnabled}
+                                    onValueChange={(value) => updateSetting('mangaPreviewEnabled', value)}
+                                    trackColor={{ false: theme.border, true: theme.success }}
+                                    thumbColor={'#FFFFFF'}
+                                />
+                            )
+                        })}
+                    </View>
+                    {renderFooter(Platform.OS === 'android'
+                        ? '⚡ EXPERIMENTAL: Long press on manga cards to preview details. This feature is experimental on Android.'
+                        : 'Long press on manga cards to preview details, chapters, and actions without navigating away.')}
                 </View>
 
             </ScrollView>

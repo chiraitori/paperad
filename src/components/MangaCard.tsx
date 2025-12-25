@@ -14,6 +14,7 @@ import { Manga } from '../types';
 interface MangaCardProps {
   manga: Manga;
   onPress: () => void;
+  onLongPress?: () => void; // For preview popup
   compact?: boolean;
   columns?: number; // Dynamic column count from settings
 }
@@ -24,6 +25,7 @@ const GAP = 8; // Gap between cards
 export const MangaCard: React.FC<MangaCardProps> = ({
   manga,
   onPress,
+  onLongPress,
   compact = false,
   columns,
 }) => {
@@ -49,6 +51,8 @@ export const MangaCard: React.FC<MangaCardProps> = ({
         { width: cardWidth, backgroundColor: theme.card },
       ]}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={300}
       activeOpacity={0.7}
     >
       <Image

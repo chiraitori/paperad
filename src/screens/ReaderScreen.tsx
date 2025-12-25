@@ -16,6 +16,7 @@ import {
   Modal,
   ScrollView,
   Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -43,9 +44,9 @@ const InfoModal: React.FC<{
   onSearchTag: (tag: string) => void;
 }> = ({ visible, onClose, manga, chapter, currentPage, totalPages, onContinueReading, onSearchTag }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
-  
+
   if (!manga || !chapter) return null;
-  
+
   const handleContinue = () => {
     onClose();
     onContinueReading();
@@ -56,18 +57,17 @@ const InfoModal: React.FC<{
     onSearchTag(tag);
   };
 
+  const { theme } = useTheme(); // Use theme for consistent colors
+
   const getStatusColor = () => {
-    if (manga.status === 'completed') return '#22C55E';
-    if (manga.status === 'ongoing') return '#3B82F6';
-    return '#888';
+    if (manga.status === 'completed') return theme.success;
+    return theme.primary; // Default to primary (blue) for ongoing/other
   };
 
   const getStatusText = () => {
-    if (manga.status === 'completed') return 'COMPLETED';
-    if (manga.status === 'ongoing') return 'ONGOING';
-    return manga.status?.toUpperCase() || 'UNKNOWN';
+    return manga?.status?.toUpperCase() || 'UNKNOWN';
   };
-  
+
   return (
     <Modal
       visible={visible}
@@ -76,9 +76,9 @@ const InfoModal: React.FC<{
       onRequestClose={onClose}
     >
       <View style={styles.infoModalContainer}>
-        <TouchableOpacity 
-          style={styles.infoModalBackdrop} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.infoModalBackdrop}
+          activeOpacity={1}
           onPress={onClose}
         />
         <View style={styles.infoModalContent}>
@@ -86,8 +86,8 @@ const InfoModal: React.FC<{
           <TouchableOpacity style={styles.infoModalClose} onPress={onClose}>
             <Ionicons name="close" size={22} color="#fff" />
           </TouchableOpacity>
-          
-          <ScrollView 
+
+          <ScrollView
             style={styles.infoModalScroll}
             showsVerticalScrollIndicator={false}
           >
@@ -106,7 +106,7 @@ const InfoModal: React.FC<{
                 </View>
               </View>
             </View>
-            
+
             {/* Action Buttons */}
             <View style={styles.infoModalButtons}>
               <TouchableOpacity style={styles.infoModalReadButton} onPress={handleContinue}>
@@ -122,15 +122,15 @@ const InfoModal: React.FC<{
                 <Ionicons name="share-outline" size={24} color="#FA6432" />
               </TouchableOpacity>
             </View>
-            
+
             {/* Description */}
             {manga.description && (
               <View style={styles.infoModalDescSection}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setShowFullDescription(!showFullDescription)}
                   activeOpacity={0.7}
                 >
-                  <Text 
+                  <Text
                     style={styles.infoModalDescription}
                     numberOfLines={showFullDescription ? undefined : 4}
                   >
@@ -142,7 +142,7 @@ const InfoModal: React.FC<{
                 </TouchableOpacity>
               </View>
             )}
-            
+
             {/* Tags Section */}
             {manga.genres && manga.genres.length > 0 && (
               <View style={styles.infoModalTagsSection}>
@@ -151,8 +151,8 @@ const InfoModal: React.FC<{
                 </View>
                 <View style={styles.infoModalGenres}>
                   {manga.genres.map((genre, index) => (
-                    <TouchableOpacity 
-                      key={index} 
+                    <TouchableOpacity
+                      key={index}
                       style={styles.infoModalGenreTag}
                       onPress={() => handleTagPress(genre)}
                     >
@@ -180,115 +180,115 @@ const ReaderSettingsModal: React.FC<{
   setReadingDirection: (dir: 'ltr' | 'rtl') => void;
   pagePadding: boolean;
   setPagePadding: (val: boolean) => void;
-}> = ({ 
-  visible, onClose, 
+}> = ({
+  visible, onClose,
   readingMode, setReadingMode,
   readingDirection, setReadingDirection,
   pagePadding, setPagePadding,
 }) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <View style={styles.settingsModalContainer}>
-        <TouchableOpacity 
-          style={styles.settingsModalBackdrop} 
-          activeOpacity={1} 
-          onPress={onClose}
-        />
-        <View style={styles.settingsModalContent}>
-          <View style={styles.settingsModalHeader}>
-            <Text style={styles.settingsModalTitle}>Reader Settings</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.settingsDoneButton}>Done</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.settingsScrollView}>
-            {/* Reader Type */}
-            <Text style={styles.settingsSectionTitle}>READER TYPE</Text>
-            <View style={styles.settingsSegmentContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.settingsSegment,
-                  readingMode === 'vertical' && styles.settingsSegmentActive,
-                ]}
-                onPress={() => setReadingMode('vertical')}
-              >
-                <Text style={[
-                  styles.settingsSegmentText,
-                  readingMode === 'vertical' && styles.settingsSegmentTextActive,
-                ]}>Vertical</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.settingsSegment,
-                  readingMode === 'horizontal' && styles.settingsSegmentActive,
-                ]}
-                onPress={() => setReadingMode('horizontal')}
-              >
-                <Text style={[
-                  styles.settingsSegmentText,
-                  readingMode === 'horizontal' && styles.settingsSegmentTextActive,
-                ]}>Horizontal</Text>
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <View style={styles.settingsModalContainer}>
+          <TouchableOpacity
+            style={styles.settingsModalBackdrop}
+            activeOpacity={1}
+            onPress={onClose}
+          />
+          <View style={styles.settingsModalContent}>
+            <View style={styles.settingsModalHeader}>
+              <Text style={styles.settingsModalTitle}>Reader Settings</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={styles.settingsDoneButton}>Done</Text>
               </TouchableOpacity>
             </View>
-            
-            {/* Reading Direction (for horizontal mode) */}
-            {readingMode === 'horizontal' && (
-              <>
-                <Text style={styles.settingsSectionTitle}>READING DIRECTION</Text>
-                <View style={styles.settingsSegmentContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.settingsSegment,
-                      readingDirection === 'ltr' && styles.settingsSegmentActive,
-                    ]}
-                    onPress={() => setReadingDirection('ltr')}
-                  >
-                    <Text style={[
-                      styles.settingsSegmentText,
-                      readingDirection === 'ltr' && styles.settingsSegmentTextActive,
-                    ]}>Left to Right</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.settingsSegment,
-                      readingDirection === 'rtl' && styles.settingsSegmentActive,
-                    ]}
-                    onPress={() => setReadingDirection('rtl')}
-                  >
-                    <Text style={[
-                      styles.settingsSegmentText,
-                      readingDirection === 'rtl' && styles.settingsSegmentTextActive,
-                    ]}>Right to Left</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-            
-            {/* General Settings */}
-            <Text style={styles.settingsSectionTitle}>GENERAL SETTINGS</Text>
-            <View style={styles.settingsCard}>
-              <View style={styles.settingsRow}>
-                <Text style={styles.settingsRowLabel}>Page Padding</Text>
-                <Switch
-                  value={pagePadding}
-                  onValueChange={setPagePadding}
-                  trackColor={{ false: '#3e3e3e', true: '#FA6432' }}
-                  thumbColor="#fff"
-                />
+
+            <ScrollView style={styles.settingsScrollView}>
+              {/* Reader Type */}
+              <Text style={styles.settingsSectionTitle}>READER TYPE</Text>
+              <View style={styles.settingsSegmentContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.settingsSegment,
+                    readingMode === 'vertical' && styles.settingsSegmentActive,
+                  ]}
+                  onPress={() => setReadingMode('vertical')}
+                >
+                  <Text style={[
+                    styles.settingsSegmentText,
+                    readingMode === 'vertical' && styles.settingsSegmentTextActive,
+                  ]}>Vertical</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.settingsSegment,
+                    readingMode === 'horizontal' && styles.settingsSegmentActive,
+                  ]}
+                  onPress={() => setReadingMode('horizontal')}
+                >
+                  <Text style={[
+                    styles.settingsSegmentText,
+                    readingMode === 'horizontal' && styles.settingsSegmentTextActive,
+                  ]}>Horizontal</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          </ScrollView>
+
+              {/* Reading Direction (for horizontal mode) */}
+              {readingMode === 'horizontal' && (
+                <>
+                  <Text style={styles.settingsSectionTitle}>READING DIRECTION</Text>
+                  <View style={styles.settingsSegmentContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.settingsSegment,
+                        readingDirection === 'ltr' && styles.settingsSegmentActive,
+                      ]}
+                      onPress={() => setReadingDirection('ltr')}
+                    >
+                      <Text style={[
+                        styles.settingsSegmentText,
+                        readingDirection === 'ltr' && styles.settingsSegmentTextActive,
+                      ]}>Left to Right</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.settingsSegment,
+                        readingDirection === 'rtl' && styles.settingsSegmentActive,
+                      ]}
+                      onPress={() => setReadingDirection('rtl')}
+                    >
+                      <Text style={[
+                        styles.settingsSegmentText,
+                        readingDirection === 'rtl' && styles.settingsSegmentTextActive,
+                      ]}>Right to Left</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+
+              {/* General Settings */}
+              <Text style={styles.settingsSectionTitle}>GENERAL SETTINGS</Text>
+              <View style={styles.settingsCard}>
+                <View style={styles.settingsRow}>
+                  <Text style={styles.settingsRowLabel}>Page Padding</Text>
+                  <Switch
+                    value={pagePadding}
+                    onValueChange={setPagePadding}
+                    trackColor={{ false: '#3e3e3e', true: '#FA6432' }}
+                    thumbColor="#fff"
+                  />
+                </View>
+              </View>
+            </ScrollView>
+          </View>
         </View>
-      </View>
-    </Modal>
-  );
-};
+      </Modal>
+    );
+  };
 
 
 // Parse DRM URL to get extensionId and actual URL
@@ -304,26 +304,45 @@ const parseDrmUrl = (url: string): { extensionId: string; actualUrl: string } | 
 };
 
 // Component for auto-sizing images with progressive loading and DRM support
-const AutoSizeImage: React.FC<{ 
-  uri: string; 
+const AutoSizeImage: React.FC<{
+  uri: string;
   onPress: () => void;
   pageNumber: number;
   totalPages: number;
 }> = ({ uri, onPress, pageNumber, totalPages }) => {
-  const [imageHeight, setImageHeight] = useState(width * 1.4);
+  const { width: screenWidth } = useWindowDimensions();
+  const [imageHeight, setImageHeight] = useState(screenWidth * 1.4);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [actualUri, setActualUri] = useState<string | null>(null);
   const [decrypting, setDecrypting] = useState(false);
 
+  // Update image height when screen width changes (orientation change)
+  useEffect(() => {
+    if (actualUri) {
+      Image.getSize(
+        actualUri,
+        (w, h) => {
+          const ratio = screenWidth / w;
+          setImageHeight(h * ratio);
+        },
+        () => {
+          setImageHeight(screenWidth * 1.4);
+        }
+      );
+    } else {
+      setImageHeight(screenWidth * 1.4);
+    }
+  }, [screenWidth, actualUri]);
+
   useEffect(() => {
     let mounted = true;
-    
+
     const loadImage = async () => {
       setLoading(true);
       setError(false);
       setActualUri(null);
-      
+
       // Check if this is a DRM URL that needs decryption
       const drmInfo = parseDrmUrl(uri);
       if (drmInfo) {
@@ -331,7 +350,7 @@ const AutoSizeImage: React.FC<{
         try {
           const decryptedUrl = await decryptDrmImage(drmInfo.extensionId, drmInfo.actualUrl);
           if (!mounted) return;
-          
+
           if (decryptedUrl) {
             setActualUri(decryptedUrl);
             // Get image size from decrypted data URL
@@ -339,13 +358,13 @@ const AutoSizeImage: React.FC<{
               decryptedUrl,
               (w, h) => {
                 if (!mounted) return;
-                const ratio = width / w;
+                const ratio = screenWidth / w;
                 setImageHeight(h * ratio);
                 setLoading(false);
               },
               () => {
                 if (!mounted) return;
-                setImageHeight(width * 1.4);
+                setImageHeight(screenWidth * 1.4);
                 setLoading(false);
               }
             );
@@ -367,27 +386,27 @@ const AutoSizeImage: React.FC<{
           uri,
           (w, h) => {
             if (!mounted) return;
-            const ratio = width / w;
+            const ratio = screenWidth / w;
             setImageHeight(h * ratio);
             setLoading(false);
           },
           () => {
             if (!mounted) return;
-            setImageHeight(width * 1.4);
+            setImageHeight(screenWidth * 1.4);
             setLoading(false);
             setError(true);
           }
         );
       }
     };
-    
+
     loadImage();
     return () => { mounted = false; };
-  }, [uri]);
+  }, [uri, screenWidth]);
 
   return (
     <TouchableOpacity activeOpacity={1} onPress={onPress}>
-      <View style={{ width: width, minHeight: imageHeight, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ width: screenWidth, minHeight: imageHeight, justifyContent: 'center', alignItems: 'center' }}>
         {(loading || decrypting) && (
           <View style={styles.pageLoadingContainer}>
             <ActivityIndicator size="small" color="#FA6432" />
@@ -404,7 +423,7 @@ const AutoSizeImage: React.FC<{
         ) : actualUri ? (
           <Image
             source={{ uri: actualUri }}
-            style={{ width: width, height: imageHeight }}
+            style={{ width: screenWidth, height: imageHeight }}
             resizeMode="contain"
             onLoad={() => setLoading(false)}
             onError={() => { setLoading(false); setError(true); }}
@@ -429,11 +448,11 @@ const HorizontalPageImage: React.FC<{
 
   useEffect(() => {
     let mounted = true;
-    
+
     const loadImage = async () => {
       setLoading(true);
       setError(false);
-      
+
       const drmInfo = parseDrmUrl(uri);
       if (drmInfo) {
         setDecrypting(true);
@@ -459,7 +478,7 @@ const HorizontalPageImage: React.FC<{
         setLoading(false);
       }
     };
-    
+
     loadImage();
     return () => { mounted = false; };
   }, [uri]);
@@ -506,22 +525,22 @@ const ChapterTransition: React.FC<{
   onNavigate: () => void;
 }> = ({ type, chapter, manga, isLoading, onNavigate }) => {
   const isPrevious = type === 'previous';
-  
+
   if (!chapter) {
     return (
       <View style={styles.transitionContainer}>
         <View style={styles.transitionContent}>
-          <Ionicons 
-            name={isPrevious ? "chevron-up" : "checkmark-circle"} 
-            size={40} 
-            color="#666" 
+          <Ionicons
+            name={isPrevious ? "chevron-up" : "checkmark-circle"}
+            size={40}
+            color="#666"
           />
           <Text style={styles.transitionTitle}>
             {isPrevious ? 'No Previous Chapter' : 'You\'re All Caught Up!'}
           </Text>
           <Text style={styles.transitionSubtitle}>
-            {isPrevious 
-              ? 'This is the first chapter' 
+            {isPrevious
+              ? 'This is the first chapter'
               : 'You\'ve reached the latest chapter'}
           </Text>
         </View>
@@ -530,8 +549,8 @@ const ChapterTransition: React.FC<{
   }
 
   return (
-    <TouchableOpacity 
-      style={styles.transitionContainer} 
+    <TouchableOpacity
+      style={styles.transitionContainer}
       onPress={onNavigate}
       activeOpacity={0.8}
     >
@@ -540,10 +559,10 @@ const ChapterTransition: React.FC<{
           <ActivityIndicator size="large" color="#FA6432" />
         ) : (
           <>
-            <Ionicons 
-              name={isPrevious ? "chevron-up" : "chevron-down"} 
-              size={32} 
-              color="#FA6432" 
+            <Ionicons
+              name={isPrevious ? "chevron-up" : "chevron-down"}
+              size={32}
+              color="#FA6432"
             />
             <Text style={styles.transitionLabel}>
               {isPrevious ? 'Previous Chapter' : 'Next Chapter'}
@@ -568,7 +587,7 @@ export const ReaderScreen: React.FC = () => {
   const route = useRoute<ReaderRouteProp>();
   const navigation = useNavigation<ReaderNavigationProp>();
   const { updateProgress, addToLibrary, library } = useLibrary();
-  
+
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -580,15 +599,15 @@ export const ReaderScreen: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [allPagesLoaded, setAllPagesLoaded] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  
+
   // Modal states
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  
+
   // Reader settings
   const [readingDirection, setReadingDirection] = useState<'ltr' | 'rtl'>('ltr');
   const [pagePadding, setPagePadding] = useState(false);
-  
+
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const flatListRef = useRef<FlatList>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -609,7 +628,7 @@ export const ReaderScreen: React.FC = () => {
 
   const toggleBookmark = async () => {
     if (!manga) return;
-    
+
     if (!isBookmarked) {
       await addToLibrary(manga);
       setIsBookmarked(true);
@@ -640,27 +659,27 @@ export const ReaderScreen: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       console.log('[Reader] loadData called with:', { mangaId, chapterId, sourceId });
-      
+
       // If sourceId is provided, load from extension
       if (sourceId) {
         console.log('[Reader] Loading from extension:', sourceId, mangaId, chapterId);
-        
+
         // Fetch manga details and chapters from extension for proper history tracking
         const [pageUrls, mangaDetails, chaptersData] = await Promise.all([
           getChapterPages(sourceId, mangaId, chapterId),
           getMangaDetails(sourceId, mangaId),
           getChapters(sourceId, mangaId),
         ]);
-        
+
         console.log('[Reader] Got pages:', pageUrls.length);
         console.log('[Reader] First 3 page URLs:', pageUrls.slice(0, 3));
-        
+
         if (pageUrls.length > 0) {
           // Find the current chapter info
           const currentChapter = chaptersData.find(ch => ch.id === chapterId);
-          
+
           // Parse tags - they can be nested in sections (same logic as MangaDetailScreen)
           let genres: string[] = [];
           if (mangaDetails?.tags) {
@@ -676,7 +695,7 @@ export const ReaderScreen: React.FC = () => {
               }
             });
           }
-          
+
           // Create a proper manga object with real data for library/history
           const mangaData: Manga = {
             id: mangaId,
@@ -685,7 +704,7 @@ export const ReaderScreen: React.FC = () => {
             description: mangaDetails?.desc || '',
             coverImage: mangaDetails?.image || '',
             genres: genres,
-            status: mangaDetails?.status === 'Completed' ? 'completed' : 'ongoing',
+            status: mangaDetails?.status?.toLowerCase() || 'ongoing',
             chapters: chaptersData.map(ch => ({
               id: ch.id,
               mangaId: mangaId,
@@ -699,7 +718,7 @@ export const ReaderScreen: React.FC = () => {
             source: sourceId,
           };
           setManga(mangaData);
-          
+
           // Create chapter object
           const chapterData: Chapter = {
             id: chapterId,
@@ -711,7 +730,7 @@ export const ReaderScreen: React.FC = () => {
             isRead: false,
           };
           setChapter(chapterData);
-          
+
           // Convert page URLs to Page objects - ensure unique keys
           const pageData: Page[] = pageUrls.map((url, index) => ({
             id: `${chapterId}-page-${index}`,
@@ -732,7 +751,7 @@ export const ReaderScreen: React.FC = () => {
           getMangaById(mangaId),
           getChapterById(mangaId, chapterId),
         ]);
-        
+
         if (mangaData && chapterData) {
           setManga(mangaData);
           setChapter(chapterData);
@@ -777,7 +796,7 @@ export const ReaderScreen: React.FC = () => {
 
   const saveProgress = useCallback(async (pageNum: number) => {
     if (!manga || !chapter) return;
-    
+
     await updateProgress({
       mangaId: manga.id,
       chapterId: chapter.id,
@@ -789,20 +808,20 @@ export const ReaderScreen: React.FC = () => {
   // Load more pages progressively as user reads
   const loadMorePages = useCallback(() => {
     if (allPagesLoaded || pages.length === 0) return;
-    
+
     setLoadedPages(prev => {
       // Check if we already have all pages
       if (prev.length >= pages.length) {
         setAllPagesLoaded(true);
         return prev;
       }
-      
+
       const nextBatch = pages.slice(prev.length, prev.length + 3);
       if (nextBatch.length === 0) {
         setAllPagesLoaded(true);
         return prev;
       }
-      
+
       const newPages = [...prev, ...nextBatch];
       if (newPages.length >= pages.length) {
         setAllPagesLoaded(true);
@@ -814,14 +833,14 @@ export const ReaderScreen: React.FC = () => {
   // Get adjacent chapters
   const getAdjacentChapters = useCallback(() => {
     if (!manga || !chapter) return { previous: null, next: null };
-    
+
     const currentIndex = manga.chapters.findIndex(ch => ch.id === chapter.id);
     // Chapters are sorted descending (newest first)
     // Previous (older) = higher index
     // Next (newer) = lower index
     const previous = currentIndex < manga.chapters.length - 1 ? manga.chapters[currentIndex + 1] : null;
     const next = currentIndex > 0 ? manga.chapters[currentIndex - 1] : null;
-    
+
     return { previous, next };
   }, [manga, chapter]);
 
@@ -842,16 +861,16 @@ export const ReaderScreen: React.FC = () => {
   const renderPage = ({ item, index }: { item: Page; index: number }) => {
     if (readingMode === 'vertical') {
       return (
-        <AutoSizeImage 
-          key={item.id} 
-          uri={item.imageUrl} 
+        <AutoSizeImage
+          key={item.id}
+          uri={item.imageUrl}
           onPress={toggleControls}
           pageNumber={item.pageNumber}
           totalPages={pages.length}
         />
       );
     }
-    
+
     // Horizontal mode - also need to handle DRM
     return (
       <HorizontalPageImage
@@ -890,7 +909,7 @@ export const ReaderScreen: React.FC = () => {
   const saveProgressRef = useRef(saveProgress);
   const loadMorePagesRef = useRef(loadMorePages);
   const loadedPagesCountRef = useRef(loadedPages.length);
-  
+
   useEffect(() => {
     saveProgressRef.current = saveProgress;
     loadMorePagesRef.current = loadMorePages;
@@ -905,7 +924,7 @@ export const ReaderScreen: React.FC = () => {
         const newPage = pageItem.index;
         setCurrentPage(newPage);
         saveProgressRef.current(newPage);
-        
+
         // Load more pages when user is near the end of loaded pages
         if (newPage >= loadedPagesCountRef.current - 2) {
           loadMorePagesRef.current();
@@ -923,7 +942,7 @@ export const ReaderScreen: React.FC = () => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const scrollY = contentOffset.y;
     const maxScrollY = contentSize.height - layoutMeasurement.height;
-    
+
     // Check if scrolled past the end (for next chapter)
     if (scrollY > maxScrollY + 100 && nextChapter && !isTransitioning) {
       goToNextChapter();
@@ -936,12 +955,12 @@ export const ReaderScreen: React.FC = () => {
     const scrollX = contentOffset.x;
     const pageWidth = layoutMeasurement.width;
     const currentPageIndex = Math.round(scrollX / pageWidth);
-    
+
     setCurrentPage(currentPageIndex);
-    
+
     // Check for chapter transitions at boundaries
     const maxScrollX = contentSize.width - layoutMeasurement.width;
-    
+
     // At first page and swiping left (RTL manga style - go to previous chapter)
     if (scrollX < -50 && previousChapter && !isTransitioning) {
       goToPreviousChapter();
@@ -974,7 +993,7 @@ export const ReaderScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <StatusBar hidden={!showControls} barStyle="light-content" />
-      
+
       <FlatList
         ref={flatListRef}
         data={readingMode === 'horizontal' ? pages : loadedPages}
@@ -1041,7 +1060,7 @@ export const ReaderScreen: React.FC = () => {
               >
                 <Ionicons name="close" size={28} color="#fff" />
               </TouchableOpacity>
-              
+
               <View style={styles.titleContainer}>
                 <Text style={styles.mangaTitle} numberOfLines={1}>
                   {manga.title}
@@ -1051,7 +1070,7 @@ export const ReaderScreen: React.FC = () => {
                 </Text>
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.infoButton}
                 onPress={() => setShowInfoModal(true)}
               >
@@ -1070,22 +1089,22 @@ export const ReaderScreen: React.FC = () => {
                 style={styles.bottomButton}
                 onPress={() => setReadingMode(readingMode === 'vertical' ? 'horizontal' : 'vertical')}
               >
-                <Ionicons 
-                  name={readingMode === 'vertical' ? 'swap-horizontal' : 'swap-vertical'} 
-                  size={22} 
-                  color="#fff" 
+                <Ionicons
+                  name={readingMode === 'vertical' ? 'swap-horizontal' : 'swap-vertical'}
+                  size={22}
+                  color="#fff"
                 />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.bottomButton} onPress={toggleBookmark}>
-                <Ionicons 
-                  name={isBookmarked ? "bookmark" : "bookmark-outline"} 
-                  size={22} 
-                  color={isBookmarked ? "#FA6432" : "#fff"} 
+                <Ionicons
+                  name={isBookmarked ? "bookmark" : "bookmark-outline"}
+                  size={22}
+                  color={isBookmarked ? "#FA6432" : "#fff"}
                 />
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.bottomButton}
                 onPress={() => setShowSettingsModal(true)}
               >
@@ -1129,12 +1148,12 @@ export const ReaderScreen: React.FC = () => {
         chapter={chapter}
         currentPage={currentPage}
         totalPages={pages.length}
-        onContinueReading={() => {}}
+        onContinueReading={() => { }}
         onSearchTag={(tag) => {
           // Navigate to Search tab in Main navigator with the tag
-          navigation.navigate('Main', { 
-            screen: 'Search', 
-            params: { initialQuery: tag } 
+          navigation.navigate('Main', {
+            screen: 'Search',
+            params: { initialQuery: tag }
           } as any);
         }}
       />
@@ -1189,7 +1208,7 @@ const styles = StyleSheet.create({
     width: width,
     height: height,
   },
-  
+
   // Transition styles
   transitionContainer: {
     height: height * 0.4,
@@ -1365,7 +1384,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  
+
   // Page loading styles
   pageLoadingContainer: {
     position: 'absolute',
@@ -1389,7 +1408,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 8,
   },
-  
+
   // Horizontal mode indicator
   horizontalPageIndicator: {
     position: 'absolute',
@@ -1432,7 +1451,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     borderRadius: 20,
   },
-  
+
   // Info Modal Styles - Paperback Style
   infoModalContainer: {
     flex: 1,
@@ -1586,7 +1605,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#fff',
   },
-  
+
   // Settings Modal Styles
   settingsModalContainer: {
     flex: 1,

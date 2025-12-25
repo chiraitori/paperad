@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const SETTINGS_KEY = '@general_settings';
 
@@ -8,7 +9,9 @@ export interface GeneralSettings {
     chapterListSort: 'ascending' | 'descending';
     interactiveUpdates: boolean;
     libraryAuth: boolean;
+    historyAuth: boolean; // Require auth to view History
     hideUpdateModal: boolean;
+    mangaPreviewEnabled: boolean; // Long-press preview popup
 }
 
 export const defaultSettings: GeneralSettings = {
@@ -17,7 +20,9 @@ export const defaultSettings: GeneralSettings = {
     chapterListSort: 'descending',
     interactiveUpdates: false,
     libraryAuth: false,
+    historyAuth: false,
     hideUpdateModal: false,
+    mangaPreviewEnabled: Platform.OS === 'ios', // Default: enabled on iOS, disabled (experimental) on Android
 };
 
 /**

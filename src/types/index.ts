@@ -7,7 +7,7 @@ export interface Manga {
   description: string;
   coverImage: string;
   genres: string[];
-  status: 'ongoing' | 'completed' | 'hiatus';
+  status: string;
   chapters: Chapter[];
   rating?: number;
   lastUpdated: string;

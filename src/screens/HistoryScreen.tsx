@@ -11,33 +11,69 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useTheme } from '../context/ThemeContext';
 import { useLibrary } from '../context/LibraryContext';
-import { MangaCard, EmptyState } from '../components';
-import { RootStackParamList, LibraryEntry } from '../types';
+import { MangaCard, EmptyState, MangaPreviewModal } from '../components';
+import { RootStackParamList, LibraryEntry, Manga } from '../types';
 import { getGeneralSettings, GeneralSettings, defaultSettings } from '../services/settingsService';
 
 type HistoryScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const HistoryScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { library, clearHistory } = useLibrary();
+  const { library, clearHistory, addToLibrary, removeFromLibrary, toggleFavorite, isInLibrary, isFavorite } = useLibrary();
   const navigation = useNavigation<HistoryScreenNavigationProp>();
   const [settings, setSettings] = useState<GeneralSettings>(defaultSettings);
   const { width, height } = useWindowDimensions();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Preview modal state
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewManga, setPreviewManga] = useState<Manga | null>(null);
+  const [previewSourceId, setPreviewSourceId] = useState<string | undefined>();
 
   // Determine orientation and get appropriate column count
   const isLandscape = width > height;
   const numColumns = isLandscape ? settings.landscapeColumns : settings.portraitColumns;
 
-  // Load settings when screen is focused
+  // Load settings and check auth when screen is focused
   useFocusEffect(
     useCallback(() => {
-      const loadSettings = async () => {
+      const loadAndCheckAuth = async () => {
         const loadedSettings = await getGeneralSettings();
         setSettings(loadedSettings);
+
+        if (loadedSettings.historyAuth) {
+          // Require authentication
+          const hasHardware = await LocalAuthentication.hasHardwareAsync();
+          const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+          if (hasHardware && isEnrolled) {
+            const result = await LocalAuthentication.authenticateAsync({
+              promptMessage: 'Authenticate to view History',
+              fallbackLabel: 'Use Passcode',
+              disableDeviceFallback: false,
+            });
+
+            setIsAuthenticated(result.success);
+          } else {
+            // No biometric, allow access
+            setIsAuthenticated(true);
+          }
+        } else {
+          setIsAuthenticated(true);
+        }
+        setAuthChecked(true);
       };
-      loadSettings();
+      loadAndCheckAuth();
+
+      // Reset auth when leaving screen
+      return () => {
+        setIsAuthenticated(false);
+        setAuthChecked(false);
+      };
     }, [])
   );
 
@@ -74,11 +110,35 @@ export const HistoryScreen: React.FC = () => {
     });
   };
 
+  const handleLongPress = (entry: LibraryEntry) => {
+    if (settings.mangaPreviewEnabled) {
+      setPreviewManga(entry.manga);
+      setPreviewSourceId(entry.manga.source);
+      setPreviewVisible(true);
+    }
+  };
+
+  const handlePreviewReadNow = (manga: Manga, chapterId: string) => {
+    navigation.navigate('Reader', {
+      mangaId: manga.id,
+      chapterId,
+      sourceId: manga.source,
+    });
+  };
+
+  const handlePreviewViewDetails = (manga: Manga) => {
+    navigation.navigate('MangaDetail', {
+      mangaId: manga.id,
+      sourceId: manga.source,
+    });
+  };
+
   const renderItem = ({ item }: { item: LibraryEntry }) => (
-    <View style={[styles.itemContainer, { maxWidth: `${100 / numColumns - 2}%` }]}>
+    <View style={styles.itemContainer}>
       <MangaCard
         manga={item.manga}
         onPress={() => navigateToManga(item)}
+        onLongPress={() => handleLongPress(item)}
         compact
         columns={numColumns}
       />
@@ -107,12 +167,64 @@ export const HistoryScreen: React.FC = () => {
     if (diffDays < 7) return `${diffDays} days ago`;
     return date.toLocaleDateString();
   };
+  const handleRetryAuth = async () => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+    if (hasHardware && isEnrolled) {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to view History',
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+      });
+
+      setIsAuthenticated(result.success);
+    }
+  };
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>History</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show locked state if auth required but not authenticated
+  if (settings.historyAuth && !isAuthenticated) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>History</Text>
+        </View>
+        <View style={styles.lockedContainer}>
+          <Ionicons name="lock-closed" size={64} color={theme.textSecondary} />
+          <Text style={[styles.lockedTitle, { color: theme.text }]}>
+            History is Locked
+          </Text>
+          <Text style={[styles.lockedDescription, { color: theme.textSecondary }]}>
+            Authenticate to view your reading history
+          </Text>
+          <TouchableOpacity
+            style={[styles.unlockButton, { backgroundColor: theme.primary }]}
+            onPress={handleRetryAuth}
+          >
+            <Ionicons name="finger-print" size={20} color="#fff" />
+            <Text style={styles.unlockButtonText}>Unlock</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>History</Text>
-        {readingHistory.length > 0 && (
+        {readingHistory.length > 0 && isAuthenticated && (
           <TouchableOpacity
             style={styles.clearButton}
             onPress={handleClearHistory}
@@ -140,6 +252,21 @@ export const HistoryScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Preview Modal */}
+      <MangaPreviewModal
+        visible={previewVisible}
+        onClose={() => setPreviewVisible(false)}
+        manga={previewManga}
+        sourceId={previewSourceId}
+        onReadNow={handlePreviewReadNow}
+        onAddToLibrary={addToLibrary}
+        onRemoveFromLibrary={removeFromLibrary}
+        onViewDetails={handlePreviewViewDetails}
+        onToggleFavorite={toggleFavorite}
+        isInLibrary={previewManga ? isInLibrary(previewManga.id) : false}
+        isFavorite={previewManga ? isFavorite(previewManga.id) : false}
+      />
     </View>
   );
 };
@@ -168,16 +295,47 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   row: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 8,
     paddingHorizontal: 6,
   },
   itemContainer: {
-    flex: 1,
+    // Don't use flex: 1 - MangaCard calculates its own width
   },
   progressText: {
     fontSize: 11,
     marginTop: -8,
     marginBottom: 12,
     paddingHorizontal: 4,
+  },
+  lockedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  lockedTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  lockedDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  unlockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  unlockButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

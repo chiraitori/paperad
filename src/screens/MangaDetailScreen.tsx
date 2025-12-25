@@ -417,7 +417,7 @@ export const MangaDetailScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {sortedChapters.slice(0, 50).map(chapter => (
+          {sortedChapters.map(chapter => (
             <ChapterListItem
               key={chapter.id}
               chapter={chapter}
@@ -425,12 +425,6 @@ export const MangaDetailScreen: React.FC = () => {
               isRead={progress?.chapterId === chapter.id}
             />
           ))}
-
-          {manga.chapters.length > 50 && (
-            <Text style={[styles.moreChapters, { color: theme.textSecondary }]}>
-              And {manga.chapters.length - 50} more chapters...
-            </Text>
-          )}
         </View>
       </ScrollView>
     </View>

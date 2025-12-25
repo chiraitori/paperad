@@ -81,6 +81,25 @@ jobs:
           }
           EOF
 
+      - name: Update app.json version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Extract version number for versionCode (e.g., 0.0.7 -> 7)
+          VERSION_CODE=$(echo "$VERSION" | grep -oE '[0-9]+' | tail -1)
+          if [ -z "$VERSION_CODE" ]; then
+            VERSION_CODE=1
+          fi
+          
+          # Update app.json with jq
+          jq --arg ver "$VERSION" --argjson code "$VERSION_CODE" '
+            .expo.version = $ver |
+            .expo.android.versionCode = $code |
+            .expo.ios.buildNumber = ($code | tostring)
+          ' app.json > app.json.tmp && mv app.json.tmp app.json
+          
+          echo "Updated app.json:"
+          cat app.json | jq '.expo | {version, android: {versionCode}, ios: {buildNumber}}'
+
       - name: Build Android APK
         run: eas build --platform android --profile preview --local --non-interactive --output ./build/paperand-${{ steps.version.outputs.version }}.apk
         env:
@@ -132,6 +151,10 @@ jobs:
           
           ### _Ad-Free Manga Reader for iOS & Android_
           
+          <img src="https://img.shields.io/badge/version-VERSION_PLACEHOLDER-blue?style=for-the-badge" alt="Version"/>
+          <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-green?style=for-the-badge" alt="Platform"/>
+          <img src="https://img.shields.io/badge/built%20with-Expo-4630EB?style=for-the-badge" alt="Built with Expo"/>
+          
           </div>
           
           ---
@@ -140,6 +163,7 @@ jobs:
           
           NOTES_EOF
           
+          sed -i "s/VERSION_PLACEHOLDER/$VERSION_BADGE/g" release_notes.md
           echo "$COMMITS" >> release_notes.md
           
           cat >> release_notes.md << 'NOTES_EOF'

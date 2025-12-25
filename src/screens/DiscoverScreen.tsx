@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
   RefreshControl,
   ImageBackground,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,9 +17,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
 import { LoadingIndicator } from '../components';
-import { 
-  getInstalledExtensions, 
-  getHomeSections, 
+import {
+  getInstalledExtensions,
+  getHomeSections,
   InstalledExtension,
   HomeSection,
   SourceManga,
@@ -30,9 +30,7 @@ import { RootStackParamList } from '../types';
 
 type DiscoverScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
-const GENRE_CARD_WIDTH = (width - 56) / 3;
+// Card widths are computed dynamically inside the component using useWindowDimensions()
 
 // Predefined colors for genre cards (Paperback style)
 const GENRE_COLORS = [
@@ -56,6 +54,12 @@ const GENRE_COLORS = [
 export const DiscoverScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<DiscoverScreenNavigationProp>();
+  const { width } = useWindowDimensions();
+
+  // Dynamic card widths that update on orientation change
+  const CARD_WIDTH = (width - 48) / 2;
+  const GENRE_CARD_WIDTH = (width - 56) / 3;
+  const FEATURED_WIDTH = width - 32;
   const [installedExtensions, setInstalledExtensions] = useState<InstalledExtension[]>([]);
   const [activeSource, setActiveSource] = useState<string>('');
   const [sections, setSections] = useState<HomeSection[]>([]);
@@ -91,11 +95,11 @@ export const DiscoverScreen: React.FC = () => {
     try {
       const extensions = await getInstalledExtensions();
       setInstalledExtensions(extensions);
-      
+
       if (extensions.length > 0) {
         // Use ref to get current value, or load from storage on initial load
         let currentSource = activeSourceRef.current;
-        
+
         if (!initialLoadDone.current) {
           // On initial load, try to restore from storage
           const savedSource = await AsyncStorage.getItem('activeSource');
@@ -104,7 +108,7 @@ export const DiscoverScreen: React.FC = () => {
           }
           initialLoadDone.current = true;
         }
-        
+
         // Only set if no current source or current source is no longer available
         if (!currentSource || !extensions.find((e: InstalledExtension) => e.id === currentSource)) {
           setActiveSource(extensions[0].id);
@@ -128,10 +132,10 @@ export const DiscoverScreen: React.FC = () => {
         getHomeSections(extensionId),
         getTags(extensionId),
       ]);
-      
+
       setSections(homeSections);
       setTags(sourceTags);
-      
+
       // Find featured section or use first section's first item
       const featuredSection = homeSections.find(s => s.type === 'featured');
       if (featuredSection && featuredSection.items.length > 0) {
@@ -161,7 +165,7 @@ export const DiscoverScreen: React.FC = () => {
   };
 
   const navigateToManga = (manga: SourceManga) => {
-    navigation.navigate('MangaDetail', { 
+    navigation.navigate('MangaDetail', {
       mangaId: manga.mangaId || manga.id,
       sourceId: manga.extensionId,
     });
@@ -190,7 +194,7 @@ export const DiscoverScreen: React.FC = () => {
           <Text style={[styles.noExtensionsText, { color: theme.textSecondary }]}>
             No extensions installed
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.addExtensionButton, { backgroundColor: theme.primary }]}
             onPress={() => navigation.navigate('Extensions' as any)}
           >
@@ -237,9 +241,9 @@ export const DiscoverScreen: React.FC = () => {
     if (featuredItems.length === 0) return null;
 
     const renderFeaturedItem = (manga: SourceManga, index: number) => (
-      <TouchableOpacity 
+      <TouchableOpacity
         key={`featured-${manga.id}-${index}`}
-        style={styles.featuredContainer}
+        style={[styles.featuredContainer, { width: FEATURED_WIDTH }]}
         onPress={() => navigateToManga(manga)}
         activeOpacity={0.9}
       >
@@ -262,7 +266,7 @@ export const DiscoverScreen: React.FC = () => {
                 </Text>
               )}
               <View style={styles.featuredButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.featuredButton, styles.addToLibraryButton]}
                   onPress={(e) => {
                     e.stopPropagation();
@@ -272,7 +276,7 @@ export const DiscoverScreen: React.FC = () => {
                   <Ionicons name="bookmark-outline" size={16} color="#fff" />
                   <Text style={styles.addButtonText}>Add to Library</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.featuredButton, styles.readNowButton]}
                   onPress={() => navigateToManga(manga)}
                 >
@@ -311,11 +315,11 @@ export const DiscoverScreen: React.FC = () => {
 
   const renderGenreCard = (tag: Tag, index: number) => {
     const color = GENRE_COLORS[index % GENRE_COLORS.length];
-    
+
     return (
       <TouchableOpacity
         key={tag.id}
-        style={[styles.genreCard, { backgroundColor: color }]}
+        style={[styles.genreCard, { backgroundColor: color, width: GENRE_CARD_WIDTH }]}
         onPress={() => navigateToGenre(tag)}
         activeOpacity={0.8}
       >
@@ -335,7 +339,7 @@ export const DiscoverScreen: React.FC = () => {
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Genres</Text>
           {tags.length > 6 && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.expandButton, { backgroundColor: theme.card }]}
               onPress={navigateToAllGenres}
             >
@@ -353,13 +357,13 @@ export const DiscoverScreen: React.FC = () => {
   const renderMangaCard = (manga: SourceManga, sectionId: string, index: number) => (
     <TouchableOpacity
       key={`${sectionId}-${manga.id}-${index}`}
-      style={styles.mangaCard}
+      style={[styles.mangaCard, { width: CARD_WIDTH }]}
       onPress={() => navigateToManga(manga)}
       activeOpacity={0.7}
     >
       <Image
         source={{ uri: manga.image }}
-        style={[styles.mangaCover, { backgroundColor: theme.card }]}
+        style={[styles.mangaCover, { backgroundColor: theme.card, width: CARD_WIDTH, height: CARD_WIDTH * 1.4 }]}
       />
       <Text
         style={[styles.mangaTitle, { color: theme.text }]}
@@ -399,7 +403,7 @@ export const DiscoverScreen: React.FC = () => {
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>{section.title}</Text>
           {section.containsMoreItems && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.expandButton, { backgroundColor: theme.card }]}
               onPress={() => navigateToCategory(section)}
             >
@@ -424,7 +428,7 @@ export const DiscoverScreen: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.headerSpacer} />
         <Text style={[styles.headerTitle, { color: theme.text }]}>Discover</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.globeButton}
           onPress={() => navigation.navigate('Extensions' as any)}
         >
@@ -442,7 +446,7 @@ export const DiscoverScreen: React.FC = () => {
         <View style={styles.emptyContainer}>
           <Ionicons name="library-outline" size={64} color={theme.textSecondary} />
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            {installedExtensions.length === 0 
+            {installedExtensions.length === 0
               ? 'Install extensions to discover manga'
               : 'No content available'}
           </Text>
@@ -536,7 +540,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   featuredContainer: {
-    width: width - 32,
+    // Width is set dynamically via inline style
     marginHorizontal: 16,
     borderRadius: 16,
     overflow: 'hidden',
@@ -603,7 +607,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   genreCard: {
-    width: GENRE_CARD_WIDTH,
+    // Width is set dynamically via inline style
     paddingVertical: 18,
     paddingHorizontal: 10,
     borderRadius: 10,
@@ -644,12 +648,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   mangaCard: {
-    width: CARD_WIDTH,
+    // Width is set dynamically via inline style
     marginRight: 12,
   },
   mangaCover: {
-    width: CARD_WIDTH,
-    height: CARD_WIDTH * 1.4,
+    // Width and height are set dynamically via inline style
     borderRadius: 8,
     marginBottom: 8,
   },

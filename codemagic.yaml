@@ -29,6 +29,30 @@ workflows:
           APP_VERSION=${CM_TAG#v}
           echo "Building version: $APP_VERSION"
           echo "APP_VERSION=$APP_VERSION" >> $CM_ENV
+          
+          # Extract version number for versionCode (e.g., 0.0.7 -> 7)
+          VERSION_CODE=$(echo "$APP_VERSION" | grep -oE '[0-9]+' | tail -1)
+          if [ -z "$VERSION_CODE" ]; then
+            VERSION_CODE=1
+          fi
+          echo "Version code: $VERSION_CODE"
+          
+          # Update app.json with jq
+          if command -v jq &> /dev/null; then
+            jq --arg ver "$APP_VERSION" --argjson code "$VERSION_CODE" '
+              .expo.version = $ver |
+              .expo.android.versionCode = $code |
+              .expo.ios.buildNumber = ($code | tostring)
+            ' app.json > app.json.tmp && mv app.json.tmp app.json
+            
+            echo "Updated app.json:"
+            cat app.json | jq '.expo | {version, android: {versionCode}, ios: {buildNumber}}'
+          else
+            echo "jq not found, using sed..."
+            sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"$APP_VERSION\"/" app.json
+            sed -i '' "s/\"versionCode\": [0-9]*/\"versionCode\": $VERSION_CODE/" app.json
+            sed -i '' "s/\"buildNumber\": \"[0-9]*\"/\"buildNumber\": \"$VERSION_CODE\"/" app.json
+          fi
 
       - name: Install Bun
         script: |

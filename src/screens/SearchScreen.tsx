@@ -16,9 +16,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
-import { EmptyState, LoadingIndicator } from '../components';
+import { useLibrary } from '../context/LibraryContext';
+import { EmptyState, LoadingIndicator, MangaPreviewModal } from '../components';
 import { getInstalledExtensions, searchManga, InstalledExtension, SourceManga, SearchResult } from '../services/sourceService';
-import { RootStackParamList } from '../types';
+import { RootStackParamList, Manga } from '../types';
+import { getGeneralSettings, GeneralSettings, defaultSettings } from '../services/settingsService';
 
 type SearchScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SearchScreenRouteProp = RouteProp<RootStackParamList, 'Search'>;
@@ -40,6 +42,7 @@ interface SourceSearchResult {
 
 export const SearchScreen: React.FC = () => {
   const { theme } = useTheme();
+  const { addToLibrary, removeFromLibrary, toggleFavorite, isInLibrary, isFavorite } = useLibrary();
   const navigation = useNavigation<SearchScreenNavigationProp>();
   const route = useRoute<SearchScreenRouteProp>();
   const initialQuery = (route.params as any)?.initialQuery || '';
@@ -54,15 +57,25 @@ export const SearchScreen: React.FC = () => {
   const [installedExtensions, setInstalledExtensions] = useState<InstalledExtension[]>([]);
   const [activeSource, setActiveSource] = useState<string | null>(null); // null = search all
   const [searchMetadata, setSearchMetadata] = useState<any>(null);
+  const [settings, setSettings] = useState<GeneralSettings>(defaultSettings);
   const currentQueryRef = useRef<string>('');
   const pendingSearchRef = useRef<string | null>(null);
   const extensionsLoadedRef = useRef(false);
+
+  // Preview modal state
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewManga, setPreviewManga] = useState<Manga | null>(null);
+  const [previewSourceId, setPreviewSourceId] = useState<string | undefined>();
 
   const loadExtensions = useCallback(async () => {
     const extensions = await getInstalledExtensions();
     setInstalledExtensions(extensions);
     extensionsLoadedRef.current = true;
-    
+
+    // Load settings
+    const loadedSettings = await getGeneralSettings();
+    setSettings(loadedSettings);
+
     // If there's a pending search, execute it now
     if (pendingSearchRef.current) {
       const searchQuery = pendingSearchRef.current;
@@ -119,7 +132,7 @@ export const SearchScreen: React.FC = () => {
   // Direct search with extensions passed in (used for initial query)
   const performSearchDirect = async (searchText: string, extensions: InstalledExtension[]) => {
     if (searchText.trim().length === 0 || extensions.length === 0) return;
-    
+
     setQuery(searchText);
     setLoading(true);
     setHasSearched(true);
@@ -128,7 +141,7 @@ export const SearchScreen: React.FC = () => {
     setMultiSourceResults([]);
     setSearchMetadata(null);
     currentQueryRef.current = searchText;
-    
+
     try {
       // Multi-source search using passed extensions
       saveRecentSearch(searchText.trim());
@@ -151,7 +164,7 @@ export const SearchScreen: React.FC = () => {
           };
         }
       });
-      
+
       const allResults = await Promise.all(searchPromises);
       // Filter out sources with no results
       const resultsWithData = allResults.filter(r => r.results.length > 0);
@@ -165,7 +178,7 @@ export const SearchScreen: React.FC = () => {
 
   const performSearch = async (searchText: string, isNewSearch: boolean = true) => {
     if (searchText.trim().length === 0) return;
-    
+
     if (isNewSearch) {
       setQuery(searchText);
       setLoading(true);
@@ -178,16 +191,16 @@ export const SearchScreen: React.FC = () => {
     } else {
       setLoadingMore(true);
     }
-    
+
     try {
       if (activeSource) {
         // Single source search
         const searchResult = await searchManga(
-          activeSource, 
-          searchText, 
+          activeSource,
+          searchText,
           isNewSearch ? null : searchMetadata
         );
-        
+
         // Check if we got any results
         if (searchResult.results.length === 0 && !isNewSearch) {
           setHasMoreResults(false);
@@ -199,7 +212,7 @@ export const SearchScreen: React.FC = () => {
             setResults(prev => [...prev, ...searchResult.results]);
           }
         }
-        
+
         // If no metadata returned, no more pages
         if (!searchResult.metadata) {
           setHasMoreResults(false);
@@ -229,7 +242,7 @@ export const SearchScreen: React.FC = () => {
               };
             }
           });
-          
+
           const allResults = await Promise.all(searchPromises);
           // Filter out sources with no results
           setMultiSourceResults(allResults.filter(r => r.results.length > 0));
@@ -269,9 +282,46 @@ export const SearchScreen: React.FC = () => {
   };
 
   const navigateToManga = (manga: SourceManga) => {
-    navigation.navigate('MangaDetail', { 
+    navigation.navigate('MangaDetail', {
       mangaId: manga.mangaId || manga.id,
-      sourceId: manga.extensionId 
+      sourceId: manga.extensionId
+    });
+  };
+
+  // Convert SourceManga to Manga for preview
+  const sourceMangaToManga = (manga: SourceManga): Manga => ({
+    id: manga.mangaId || manga.id,
+    title: manga.title,
+    author: manga.subtitle || '',
+    description: '',
+    coverImage: manga.image,
+    genres: [],
+    status: 'ongoing',
+    chapters: [],
+    lastUpdated: new Date().toISOString(),
+    source: manga.extensionId,
+  });
+
+  const handleLongPress = (manga: SourceManga) => {
+    if (settings.mangaPreviewEnabled) {
+      setPreviewManga(sourceMangaToManga(manga));
+      setPreviewSourceId(manga.extensionId);
+      setPreviewVisible(true);
+    }
+  };
+
+  const handlePreviewReadNow = (manga: Manga, chapterId: string) => {
+    navigation.navigate('Reader', {
+      mangaId: manga.id,
+      chapterId,
+      sourceId: manga.source,
+    });
+  };
+
+  const handlePreviewViewDetails = (manga: Manga) => {
+    navigation.navigate('MangaDetail', {
+      mangaId: manga.id,
+      sourceId: manga.source,
     });
   };
 
@@ -283,13 +333,13 @@ export const SearchScreen: React.FC = () => {
   };
 
   const renderSourceIcons = () => (
-    <ScrollView 
-      horizontal 
+    <ScrollView
+      horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.sourcesContainer}
     >
       {/* All Sources option */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.sourceCard}
         onPress={() => setActiveSource(null)}
       >
@@ -300,18 +350,18 @@ export const SearchScreen: React.FC = () => {
           <Ionicons name="globe-outline" size={28} color={activeSource === null ? theme.primary : theme.textSecondary} />
         </View>
         <Text style={[
-          styles.sourceName, 
+          styles.sourceName,
           { color: activeSource === null ? theme.primary : theme.text }
         ]} numberOfLines={1}>
           All
         </Text>
       </TouchableOpacity>
-      
+
       {installedExtensions.map((ext) => {
         const iconUrl = getExtensionIconUrl(ext);
         return (
-          <TouchableOpacity 
-            key={ext.id} 
+          <TouchableOpacity
+            key={ext.id}
             style={styles.sourceCard}
             onPress={() => setActiveSource(ext.id)}
           >
@@ -326,7 +376,7 @@ export const SearchScreen: React.FC = () => {
               )}
             </View>
             <Text style={[
-              styles.sourceName, 
+              styles.sourceName,
               { color: activeSource === ext.id ? theme.primary : theme.text }
             ]} numberOfLines={1}>
               {ext.name}
@@ -339,7 +389,7 @@ export const SearchScreen: React.FC = () => {
 
   const renderRecentSearches = () => {
     if (recentSearches.length === 0) return null;
-    
+
     return (
       <View style={styles.recentContainer}>
         <View style={[styles.recentCard, { backgroundColor: theme.card }]}>
@@ -353,7 +403,7 @@ export const SearchScreen: React.FC = () => {
             <TouchableOpacity
               key={index}
               style={[
-                styles.recentItem, 
+                styles.recentItem,
                 index < recentSearches.length - 1 && { borderBottomColor: theme.border, borderBottomWidth: StyleSheet.hairlineWidth }
               ]}
               onPress={() => performSearch(item)}
@@ -369,7 +419,7 @@ export const SearchScreen: React.FC = () => {
   const renderResultItem = ({ item, index }: { item: SourceManga; index: number }) => {
     const isLastRow = index >= results.length - (results.length % NUM_COLUMNS || NUM_COLUMNS);
     const columnIndex = index % NUM_COLUMNS;
-    
+
     return (
       <TouchableOpacity
         style={[
@@ -378,6 +428,8 @@ export const SearchScreen: React.FC = () => {
           !isLastRow && { marginBottom: GRID_GAP },
         ]}
         onPress={() => navigateToManga(item)}
+        onLongPress={() => handleLongPress(item)}
+        delayLongPress={300}
         activeOpacity={0.7}
       >
         <Image
@@ -402,6 +454,8 @@ export const SearchScreen: React.FC = () => {
       key={`${manga.extensionId}-${manga.id}-${index}`}
       style={styles.horizontalCard}
       onPress={() => navigateToManga(manga)}
+      onLongPress={() => handleLongPress(manga)}
+      delayLongPress={300}
       activeOpacity={0.7}
     >
       <Image
@@ -439,7 +493,7 @@ export const SearchScreen: React.FC = () => {
               {sourceResult.extensionName}
             </Text>
             {sourceResult.results.length > 0 && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.expandButton, { backgroundColor: theme.card }]}
                 onPress={() => navigateToViewMore(sourceResult)}
               >
@@ -550,6 +604,21 @@ export const SearchScreen: React.FC = () => {
           {renderRecentSearches()}
         </ScrollView>
       )}
+
+      {/* Preview Modal */}
+      <MangaPreviewModal
+        visible={previewVisible}
+        onClose={() => setPreviewVisible(false)}
+        manga={previewManga}
+        sourceId={previewSourceId}
+        onReadNow={handlePreviewReadNow}
+        onAddToLibrary={addToLibrary}
+        onRemoveFromLibrary={removeFromLibrary}
+        onViewDetails={handlePreviewViewDetails}
+        onToggleFavorite={toggleFavorite}
+        isInLibrary={previewManga ? isInLibrary(previewManga.id) : false}
+        isFavorite={previewManga ? isFavorite(previewManga.id) : false}
+      />
     </View>
   );
 };

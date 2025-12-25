@@ -44,26 +44,39 @@ export const ExtensionSettingsScreen: React.FC = () => {
     try {
       const result = await getExtensionSettings(extensionId);
       setSettings(result);
-      
+
       // Re-navigate to current form if we have a stack
-      if (formStack.length > 0 && result) {
-        // Rebuild the current form from fresh settings
-        let currentSections: DUISection[] | undefined = result.sections ? [{ id: 'main', rows: result.sections as unknown as DUIRow[] }] : undefined;
-        
+      if (formStack.length > 0 && result && result.sections) {
+        console.log('[ExtSettings] Reconstructing form path, stack length:', formStack.length);
+
+        // Start with the result sections (which contain rows, not the other way around)
+        let currentSections: DUISection[] | undefined = result.sections;
+
         for (const stackItem of formStack) {
           if (!currentSections) break;
-          
-          // Find the row in current sections
+
+          console.log('[ExtSettings] Looking for row:', stackItem.rowId);
+
+          // Find the navigation row in any section
+          let found = false;
           for (const section of currentSections) {
             const row = section.rows?.find(r => r.id === stackItem.rowId);
             if (row?.form) {
+              console.log('[ExtSettings] Found form for row:', stackItem.rowId);
               currentSections = row.form;
+              found = true;
               break;
             }
           }
+
+          if (!found) {
+            console.log('[ExtSettings] Could not find row:', stackItem.rowId, 'in sections');
+            break;
+          }
         }
-        
+
         if (currentSections) {
+          console.log('[ExtSettings] Reconstructed form with sections:', currentSections.length);
           setCurrentForm(currentSections);
         }
       }
@@ -110,12 +123,12 @@ export const ExtensionSettingsScreen: React.FC = () => {
         // Build the full path for this button
         const basePath = getCurrentPath();
         const fullPath = basePath ? `${basePath}/${sectionId}/${row.id}` : `${sectionId}/${row.id}`;
-        
+
         console.log('Invoking button action:', fullPath);
         const success = await invokeExtensionSettingAction(extensionId, fullPath);
-        
+
         if (success) {
-          // Reload settings after button action
+          // Reload settings to update the form (e.g., login status)
           await loadSettings();
           Alert.alert('Success', `${row.label} completed`);
         } else {
@@ -132,13 +145,13 @@ export const ExtensionSettingsScreen: React.FC = () => {
       // Build the full path for this setting
       const basePath = getCurrentPath();
       const fullPath = basePath ? `${basePath}/${sectionId}/${row.id}` : `${sectionId}/${row.id}`;
-      
+
       console.log('Updating setting:', fullPath, 'to', [selectedValue]);
       const success = await updateExtensionSetting(extensionId, fullPath, [selectedValue]);
-      
+
       if (success) {
-        // Reload settings to reflect changes
-        await loadSettings();
+        // Don't reload settings - it breaks form navigation
+        console.log('Select value saved successfully');
       } else {
         console.error('Failed to update setting');
       }
@@ -166,27 +179,27 @@ export const ExtensionSettingsScreen: React.FC = () => {
   const handleInputBlur = async (row: DUIRow, sectionId: string) => {
     const key = `${sectionId}/${row.id}`;
     const value = inputValues[key];
-    
+
     // Only save if we have a local value that differs from the original
     if (value === undefined) return;
-    
+
     try {
       // Build the full path for this setting
       const basePath = getCurrentPath();
       const fullPath = basePath ? `${basePath}/${sectionId}/${row.id}` : `${sectionId}/${row.id}`;
-      
+
       console.log('Saving input setting on blur:', fullPath, 'to', value);
       const success = await updateExtensionSetting(extensionId, fullPath, value);
-      
+
       if (success) {
         // Clear local state for this input after save
+        // Don't reload settings - it breaks the form navigation
         setInputValues(prev => {
           const newState = { ...prev };
           delete newState[key];
           return newState;
         });
-        // Reload settings to get updated values
-        await loadSettings();
+        console.log('Input saved successfully');
       } else {
         console.error('Failed to save input setting');
       }
@@ -196,6 +209,12 @@ export const ExtensionSettingsScreen: React.FC = () => {
   };
 
   const renderRow = (row: DUIRow, index: number, sectionId: string) => {
+    // Skip rows with undefined type or no label/value (malformed rows)
+    if (!row.type || (!row.label && row.value === undefined)) {
+      console.log('[ExtSettings] Skipping malformed row:', row.id);
+      return null;
+    }
+
     switch (row.type) {
       case 'navigation':
         return (
@@ -324,9 +343,17 @@ export const ExtensionSettingsScreen: React.FC = () => {
         );
 
       case 'label':
+        // Label rows can have both a label and a value (e.g., "Status: Logged In")
+        const labelValue = row.value !== undefined && row.value !== null ? String(row.value) : '';
+        const hasValue = labelValue.length > 0;
+        const displayText = hasValue ? (row.label ? `${row.label}: ${labelValue}` : labelValue) : row.label;
+
+        // Don't render empty labels
+        if (!displayText) return null;
+
         return (
-          <View key={row.id || index} style={[styles.row, { backgroundColor: theme.card }]}>
-            <Text style={[styles.rowLabel, { color: theme.text }]}>{row.label}</Text>
+          <View key={row.id || index} style={[styles.row, styles.labelRow, { backgroundColor: theme.card }]}>
+            <Text style={[styles.labelText, { color: theme.text }]}>{displayText}</Text>
           </View>
         );
 
@@ -343,6 +370,21 @@ export const ExtensionSettingsScreen: React.FC = () => {
     if (section.isHidden) return null;
     const sectionId = section.id || `section_${index}`;
 
+    // Debug log the section data
+    console.log('[ExtSettings] Section:', sectionId, 'rows:', section.rows?.length, JSON.stringify(section.rows?.map(r => ({ id: r.id, type: r.type, label: r.label, value: r.value }))));
+
+    // Pre-render rows to filter out nulls
+    const renderedRows = section.rows
+      .map((row, rowIndex) => {
+        // Log each row for debugging
+        console.log('[ExtSettings] Row:', row.id, 'type:', row.type, 'label:', row.label, 'value:', row.value);
+        return renderRow(row, rowIndex, sectionId);
+      })
+      .filter(Boolean); // Remove null entries
+
+    // Don't render section if no visible rows
+    if (renderedRows.length === 0) return null;
+
     return (
       <View key={sectionId} style={styles.section}>
         {section.header && (
@@ -351,7 +393,7 @@ export const ExtensionSettingsScreen: React.FC = () => {
           </Text>
         )}
         <View style={[styles.sectionContent, { borderColor: theme.border }]}>
-          {section.rows.map((row, rowIndex) => renderRow(row, rowIndex, sectionId))}
+          {renderedRows}
         </View>
         {section.footer && (
           <Text style={[styles.sectionFooter, { color: theme.textSecondary }]}>
@@ -551,5 +593,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     fontSize: 16,
     backgroundColor: 'rgba(128, 128, 128, 0.1)',
+  },
+  labelRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  labelText: {
+    fontSize: 16,
+    lineHeight: 22,
   },
 });

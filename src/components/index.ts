@@ -6,3 +6,4 @@ export { ExtensionRunner } from './ExtensionRunner';
 export { PickerModal } from './PickerModal';
 export { UpdateModal } from './UpdateModal';
 export { AppDialog, showAlert } from './AppDialog';
+export { MangaPreviewModal } from './MangaPreviewModal';

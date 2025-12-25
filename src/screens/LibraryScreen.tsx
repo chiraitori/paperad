@@ -13,8 +13,8 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../context/ThemeContext';
 import { useLibrary } from '../context/LibraryContext';
-import { MangaCard, EmptyState } from '../components';
-import { RootStackParamList, LibraryEntry } from '../types';
+import { MangaCard, EmptyState, MangaPreviewModal } from '../components';
+import { RootStackParamList, LibraryEntry, Manga } from '../types';
 import { getGeneralSettings, GeneralSettings, defaultSettings } from '../services/settingsService';
 
 type LibraryScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -23,12 +23,17 @@ type FilterType = 'all' | 'favorites' | 'reading' | 'completed';
 
 export const LibraryScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { library, favorites } = useLibrary();
+  const { library, favorites, addToLibrary, removeFromLibrary, toggleFavorite, isInLibrary, isFavorite } = useLibrary();
   const navigation = useNavigation<LibraryScreenNavigationProp>();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [settings, setSettings] = useState<GeneralSettings>(defaultSettings);
   const { width, height } = useWindowDimensions();
+
+  // Preview modal state
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewManga, setPreviewManga] = useState<Manga | null>(null);
+  const [previewSourceId, setPreviewSourceId] = useState<string | undefined>();
 
   // Determine orientation and get appropriate column count
   const isLandscape = width > height;
@@ -83,10 +88,34 @@ export const LibraryScreen: React.FC = () => {
     });
   };
 
+  const handleLongPress = (entry: LibraryEntry) => {
+    if (settings.mangaPreviewEnabled) {
+      setPreviewManga(entry.manga);
+      setPreviewSourceId(entry.manga.source);
+      setPreviewVisible(true);
+    }
+  };
+
+  const handlePreviewReadNow = (manga: Manga, chapterId: string) => {
+    navigation.navigate('Reader', {
+      mangaId: manga.id,
+      chapterId,
+      sourceId: manga.source,
+    });
+  };
+
+  const handlePreviewViewDetails = (manga: Manga) => {
+    navigation.navigate('MangaDetail', {
+      mangaId: manga.id,
+      sourceId: manga.source,
+    });
+  };
+
   const renderItem = ({ item }: { item: LibraryEntry }) => (
     <MangaCard
       manga={item.manga}
       onPress={() => navigateToManga(item)}
+      onLongPress={() => handleLongPress(item)}
       compact
       columns={numColumns}
     />
@@ -155,6 +184,21 @@ export const LibraryScreen: React.FC = () => {
           }
         />
       )}
+
+      {/* Preview Modal */}
+      <MangaPreviewModal
+        visible={previewVisible}
+        onClose={() => setPreviewVisible(false)}
+        manga={previewManga}
+        sourceId={previewSourceId}
+        onReadNow={handlePreviewReadNow}
+        onAddToLibrary={addToLibrary}
+        onRemoveFromLibrary={removeFromLibrary}
+        onViewDetails={handlePreviewViewDetails}
+        onToggleFavorite={toggleFavorite}
+        isInLibrary={previewManga ? isInLibrary(previewManga.id) : false}
+        isFavorite={previewManga ? isFavorite(previewManga.id) : false}
+      />
     </View>
   );
 };
@@ -192,7 +236,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   row: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 8,
     marginBottom: 4,
   },
 });
