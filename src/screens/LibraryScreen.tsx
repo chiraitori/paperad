@@ -47,18 +47,40 @@ export const LibraryScreen: React.FC = () => {
   // Track app state for re-auth on resume
   const appState = useRef(AppState.currentState);
 
+  // Auth check function - extracted so it can be called from AppState listener
+  const performAuthCheck = useCallback(async () => {
+    const loadedSettings = await getGeneralSettings();
+    setSettings(loadedSettings);
+
+    if (loadedSettings.libraryAuth) {
+      // Require authentication - will use biometric or device PIN/passcode
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to view Library',
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+      });
+
+      setIsAuthenticated(result.success);
+    } else {
+      setIsAuthenticated(true);
+    }
+    setAuthChecked(true);
+  }, []);
+
   // Determine orientation and get appropriate column count
   const isLandscape = width > height;
   const numColumns = isLandscape ? settings.landscapeColumns : settings.portraitColumns;
 
   // Listen for app state changes to re-lock when coming from background
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
       // When app comes back from background to active
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        // Reset authentication - force re-auth
+        // Reset and re-authenticate
         setIsAuthenticated(false);
         setAuthChecked(false);
+        // Trigger re-auth
+        await performAuthCheck();
       }
       appState.current = nextAppState;
     });
@@ -66,7 +88,7 @@ export const LibraryScreen: React.FC = () => {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [performAuthCheck]);
 
   // Prevent screen capture when library auth is enabled
   usePreventScreenCapture(settings.libraryAuth ? 'library_auth' : undefined);
@@ -74,32 +96,14 @@ export const LibraryScreen: React.FC = () => {
   // Load settings and check auth when screen is focused
   useFocusEffect(
     useCallback(() => {
-      const loadAndCheckAuth = async () => {
-        const loadedSettings = await getGeneralSettings();
-        setSettings(loadedSettings);
-
-        if (loadedSettings.libraryAuth) {
-          // Require authentication - will use biometric or device PIN/passcode
-          const result = await LocalAuthentication.authenticateAsync({
-            promptMessage: 'Authenticate to view Library',
-            fallbackLabel: 'Use Passcode',
-            disableDeviceFallback: false,
-          });
-
-          setIsAuthenticated(result.success);
-        } else {
-          setIsAuthenticated(true);
-        }
-        setAuthChecked(true);
-      };
-      loadAndCheckAuth();
+      performAuthCheck();
 
       // Reset auth when leaving screen
       return () => {
         setIsAuthenticated(false);
         setAuthChecked(false);
       };
-    }, [])
+    }, [performAuthCheck])
   );
 
   const onRefresh = useCallback(async () => {
