@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, Text, Alert, AppState, AppStateStatus } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -250,10 +249,10 @@ export default function App() {
           )}
           {/* Privacy overlay for multitasking - covers content when on protected screen */}
           {shouldShowPrivacyOverlay && (
-            <BlurView intensity={100} tint="dark" style={styles.privacyOverlay}>
+            <View style={styles.privacyOverlay}>
               <Text style={styles.privacyIcon}>📚</Text>
               <Text style={styles.privacyTitle}>Paperand</Text>
-            </BlurView>
+            </View>
           )}
         </LibraryProvider>
       </ThemeProvider>
@@ -264,8 +263,10 @@ export default function App() {
 const styles = StyleSheet.create({
   privacyOverlay: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(26, 26, 46, 0.98)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
   },
   privacyIcon: {
     fontSize: 64,
