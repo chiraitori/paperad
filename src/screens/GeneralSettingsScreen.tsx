@@ -8,7 +8,6 @@ import {
     Switch,
     Platform,
     ActionSheetIOS,
-    Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useTheme } from '../context/ThemeContext';
 import { PickerModal } from '../components/PickerModal';
+import { AppDialog } from '../components/AppDialog';
 
 const SETTINGS_KEY = '@general_settings';
 
@@ -28,6 +28,13 @@ interface GeneralSettings {
     historyAuth: boolean;
     hideUpdateModal: boolean;
     mangaPreviewEnabled: boolean; // Long-press preview popup
+}
+
+interface DialogState {
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: { text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }[];
 }
 
 const defaultSettings: GeneralSettings = {
@@ -47,6 +54,7 @@ export const GeneralSettingsScreen: React.FC = () => {
 
     const [settings, setSettings] = useState<GeneralSettings>(defaultSettings);
     const [showSortPicker, setShowSortPicker] = useState(false);
+    const [dialog, setDialog] = useState<DialogState>({ visible: false, title: '', message: '', buttons: [] });
 
     useEffect(() => {
         loadSettings();
@@ -101,28 +109,36 @@ export const GeneralSettingsScreen: React.FC = () => {
                     updateSetting(settingKey, newValue);
                 } else {
                     // Authentication failed or cancelled - don't change setting
-                    Alert.alert(
-                        'Authentication Required',
-                        'You must verify your identity to change this security setting.'
-                    );
+                    setDialog({
+                        visible: true,
+                        title: 'Authentication Required',
+                        message: 'You must verify your identity to change this security setting.',
+                        buttons: [{ text: 'OK' }]
+                    });
                 }
             } else {
                 // No biometrics available - show warning and allow change
-                Alert.alert(
-                    'No Biometrics Available',
-                    'Biometric authentication is not set up on this device. The setting will be changed without verification.',
-                    [
+                setDialog({
+                    visible: true,
+                    title: 'No Biometrics Available',
+                    message: 'Biometric authentication is not set up on this device. The setting will be changed without verification.',
+                    buttons: [
                         { text: 'Cancel', style: 'cancel' },
                         {
                             text: 'Continue',
                             onPress: () => updateSetting(settingKey, newValue)
                         },
                     ]
-                );
+                });
             }
         } catch (error) {
             console.error('Biometric auth error:', error);
-            Alert.alert('Error', 'Failed to verify identity. Please try again.');
+            setDialog({
+                visible: true,
+                title: 'Error',
+                message: 'Failed to verify identity. Please try again.',
+                buttons: [{ text: 'OK' }]
+            });
         }
     };
 
@@ -395,6 +411,15 @@ export const GeneralSettingsScreen: React.FC = () => {
                     updateSetting('chapterListSort', value as 'ascending' | 'descending');
                     setShowSortPicker(false);
                 }}
+            />
+
+            {/* Custom styled dialog */}
+            <AppDialog
+                visible={dialog.visible}
+                title={dialog.title}
+                message={dialog.message}
+                buttons={dialog.buttons}
+                onDismiss={() => setDialog({ ...dialog, visible: false })}
             />
         </View>
     );
