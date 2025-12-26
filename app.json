@@ -2,7 +2,7 @@
   "expo": {
     "name": "Paperand",
     "slug": "paperback-android",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "scheme": "paperand",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -10,14 +10,29 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+      "dark": {
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#1a1a2e"
+      }
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.chiraitori.paperand.ios",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "splash": {
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#1a1a2e"
+        }
       }
     },
     "android": {
@@ -26,7 +41,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.chiraitori.paperand.android",
-      "versionCode": 9,
+      "versionCode": 10,
       "permissions": [
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],

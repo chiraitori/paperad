@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, Alert, AppState, AppStateStatus } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,11 +27,6 @@ initLogCapture();
 const SETTINGS_KEY = '@general_settings';
 
 const handleDeepLink = async (url: string) => {
-  // ... (rest of helper functions)
-  // skipping unchanged lines for brevity in prompt, but tool requires clean replacement
-  // actually I'll just target the import and usage separately or use a larger block carefully
-  // Let's replace the import line first
-
   const action = parseDeepLink(url);
   if (!action) return;
 
@@ -54,94 +49,11 @@ export default function App() {
   const [currentVersion, setCurrentVersion] = useState('');
   const [latestRelease, setLatestRelease] = useState<ReleaseInfo | null>(null);
 
-  // Privacy overlay state - show when app is in background/inactive AND on protected screen
-  const [isAppInactive, setIsAppInactive] = useState(false);
-  const [authSettings, setAuthSettings] = useState({ libraryAuth: false, historyAuth: false });
-  const [currentRoute, setCurrentRoute] = useState<string | null>(null);
-  const appState = useRef(AppState.currentState);
-
   // Hook for handling quick action routing
   // Note: Since we're using React Navigation, the router implementation handles the navigation
   // based on the action params. However, since we might need custom handling for tabs,
   // we listen to the action here.
   const quickAction = useQuickAction();
-
-  // Load auth settings
-  useEffect(() => {
-    const loadAuthSettings = async () => {
-      try {
-        const savedSettings = await AsyncStorage.getItem(SETTINGS_KEY);
-        if (savedSettings) {
-          const settings = JSON.parse(savedSettings);
-          setAuthSettings({
-            libraryAuth: settings.libraryAuth || false,
-            historyAuth: settings.historyAuth || false,
-          });
-          console.log('[Privacy] Auth settings loaded:', settings.libraryAuth, settings.historyAuth);
-        }
-      } catch (error) {
-        console.error('Failed to load auth settings:', error);
-      }
-    };
-    loadAuthSettings();
-  }, []);
-
-  // Track current navigation route
-  useEffect(() => {
-    const unsubscribe = navigationRef.addListener('state', () => {
-      if (navigationRef.isReady()) {
-        const route = navigationRef.getCurrentRoute();
-        console.log('[Privacy] Current route:', route?.name);
-        setCurrentRoute(route?.name || null);
-      }
-    });
-    return unsubscribe;
-  }, []);
-
-  // Listen for app state changes to show privacy overlay
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      console.log('[Privacy] AppState changed to:', nextAppState);
-
-      // When going to background, reload settings and get current route
-      if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // Get current route immediately
-        if (navigationRef.isReady()) {
-          const route = navigationRef.getCurrentRoute();
-          console.log('[Privacy] Route when going inactive:', route?.name);
-          setCurrentRoute(route?.name || null);
-        }
-
-        try {
-          const savedSettings = await AsyncStorage.getItem(SETTINGS_KEY);
-          if (savedSettings) {
-            const settings = JSON.parse(savedSettings);
-            setAuthSettings({
-              libraryAuth: settings.libraryAuth || false,
-              historyAuth: settings.historyAuth || false,
-            });
-            console.log('[Privacy] Settings when inactive:', settings.libraryAuth, settings.historyAuth);
-          }
-        } catch (error) { }
-        setIsAppInactive(true);
-      } else if (nextAppState === 'active') {
-        setIsAppInactive(false);
-      }
-      appState.current = nextAppState;
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
-  // Calculate if we should show privacy overlay
-  const shouldShowPrivacyOverlay = isAppInactive && (
-    (currentRoute === 'Library' && authSettings.libraryAuth) ||
-    (currentRoute === 'History' && authSettings.historyAuth)
-  );
-
-  console.log('[Privacy] Should show overlay:', shouldShowPrivacyOverlay, 'Route:', currentRoute, 'Inactive:', isAppInactive, 'LibAuth:', authSettings.libraryAuth, 'HistAuth:', authSettings.historyAuth);
 
   // Check for updates on app start
   useEffect(() => {
@@ -261,34 +173,8 @@ export default function App() {
               onSkip={() => setUpdateModalVisible(false)}
             />
           )}
-          {/* Privacy overlay for multitasking - covers content when on protected screen */}
-          {shouldShowPrivacyOverlay && (
-            <View style={styles.privacyOverlay}>
-              <Text style={styles.privacyIcon}>📚</Text>
-              <Text style={styles.privacyTitle}>Paperand</Text>
-            </View>
-          )}
         </LibraryProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  privacyOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(26, 26, 46, 0.98)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-  },
-  privacyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  privacyTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-});
