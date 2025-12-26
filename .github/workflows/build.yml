@@ -112,9 +112,100 @@ jobs:
           path: ./build/paperand-${{ steps.version.outputs.version }}.apk
           retention-days: 30
 
+  fetch-ios:
+    name: Fetch iOS from Codemagic
+    runs-on: ubuntu-latest
+    needs: [build-android]
+    if: startsWith(github.ref, 'refs/tags/')
+    outputs:
+      ipa_downloaded: ${{ steps.download.outputs.downloaded }}
+    steps:
+      - name: Wait for Codemagic build to complete
+        id: wait
+        run: |
+          echo "Waiting 5 minutes for Codemagic to build..."
+          sleep 300
+          
+      - name: Download IPA from Codemagic
+        id: download
+        env:
+          CODEMAGIC_TOKEN: ${{ secrets.CODEMAGIC_TOKEN }}
+          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
+        run: |
+          VERSION="${{ needs.build-android.outputs.version }}"
+          TAG="v${VERSION}"
+          
+          echo "Looking for Codemagic build with tag: $TAG"
+          
+          # Get builds for this app and find the one matching our tag
+          BUILDS=$(curl -s -H "x-auth-token: $CODEMAGIC_TOKEN" \
+            "https://api.codemagic.io/builds?appId=$CODEMAGIC_APP_ID")
+          
+          # Find build that matches our tag
+          BUILD_INFO=$(echo "$BUILDS" | jq --arg tag "$TAG" '[.builds[] | select(.tag == $tag)] | .[0]')
+          BUILD_ID=$(echo "$BUILD_INFO" | jq -r '._id // empty')
+          BUILD_STATUS=$(echo "$BUILD_INFO" | jq -r '.status // empty')
+          
+          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" == "null" ]; then
+            echo "No build found for tag $TAG, checking latest builds..."
+            BUILD_ID=$(echo "$BUILDS" | jq -r '.builds[0]._id')
+            BUILD_STATUS=$(echo "$BUILDS" | jq -r '.builds[0].status')
+          fi
+          
+          echo "Build ID: $BUILD_ID, Status: $BUILD_STATUS"
+          
+          # Wait if still building (max 10 more minutes)
+          for i in {1..20}; do
+            if [ "$BUILD_STATUS" == "finished" ]; then
+              break
+            fi
+            echo "Build still $BUILD_STATUS, waiting 30s..."
+            sleep 30
+            BUILD_RESPONSE=$(curl -s -H "x-auth-token: $CODEMAGIC_TOKEN" \
+              "https://api.codemagic.io/builds/$BUILD_ID")
+            BUILD_STATUS=$(echo "$BUILD_RESPONSE" | jq -r '.build.status // .status')
+          done
+          
+          if [ "$BUILD_STATUS" != "finished" ]; then
+            echo "Build did not finish in time"
+            echo "downloaded=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Re-fetch build to get artifacts
+          BUILD_RESPONSE=$(curl -s -H "x-auth-token: $CODEMAGIC_TOKEN" \
+            "https://api.codemagic.io/builds/$BUILD_ID")
+          
+          # Get artifact URL from build response
+          ARTIFACT_URL=$(echo "$BUILD_RESPONSE" | jq -r '.build.artefacts[0].url // .artefacts[0].url // empty')
+          
+          if [ -z "$ARTIFACT_URL" ]; then
+            echo "No artifact found in build $BUILD_ID"
+            echo "downloaded=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "Downloading IPA from: $ARTIFACT_URL"
+          mkdir -p release
+          curl -L -H "x-auth-token: $CODEMAGIC_TOKEN" -o "release/paperand-${VERSION}.ipa" "$ARTIFACT_URL"
+          
+          if [ -f "release/paperand-${VERSION}.ipa" ]; then
+            echo "downloaded=true" >> $GITHUB_OUTPUT
+          else
+            echo "downloaded=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Upload iOS Artifact
+        if: steps.download.outputs.downloaded == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ./release/*.ipa
+          retention-days: 30
+
   release:
     name: Create Release
-    needs: [build-android]
+    needs: [build-android, fetch-ios]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -130,6 +221,14 @@ jobs:
         with:
           name: android-apk
           path: ./release
+
+      - name: Download iOS Artifact
+        if: needs.fetch-ios.outputs.ipa_downloaded == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: ./release
+        continue-on-error: true
 
       - name: Generate Release Notes
         id: notes
@@ -175,7 +274,7 @@ jobs:
           | Platform | File | Installation |
           |----------|------|--------------|
           | 🤖 **Android** | `paperand-${{ needs.build-android.outputs.version }}.apk` | Direct install |
-          | 🍎 **iOS** | See Codemagic | Sideload required |
+          | 🍎 **iOS** | `paperand-${{ needs.build-android.outputs.version }}.ipa` | Sideload with AltStore/Sideloadly |
           
           ---
           
@@ -196,5 +295,7 @@ jobs:
           prerelease: ${{ contains(needs.build-android.outputs.version, 'rc') || contains(needs.build-android.outputs.version, 'alpha') || contains(needs.build-android.outputs.version, 'beta') }}
           files: |
             ./release/paperand-${{ needs.build-android.outputs.version }}.apk
+            ./release/paperand-${{ needs.build-android.outputs.version }}.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
