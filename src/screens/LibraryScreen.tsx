@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   RefreshControl,
   Dimensions,
   useWindowDimensions,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,9 +43,29 @@ export const LibraryScreen: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Track app state for re-auth on resume
+  const appState = useRef(AppState.currentState);
+
   // Determine orientation and get appropriate column count
   const isLandscape = width > height;
   const numColumns = isLandscape ? settings.landscapeColumns : settings.portraitColumns;
+
+  // Listen for app state changes to re-lock when coming from background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      // When app comes back from background to active
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        // Reset authentication - force re-auth
+        setIsAuthenticated(false);
+        setAuthChecked(false);
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   // Load settings and check auth when screen is focused
   useFocusEffect(
@@ -53,22 +75,14 @@ export const LibraryScreen: React.FC = () => {
         setSettings(loadedSettings);
 
         if (loadedSettings.libraryAuth) {
-          // Require authentication
-          const hasHardware = await LocalAuthentication.hasHardwareAsync();
-          const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+          // Require authentication - will use biometric or device PIN/passcode
+          const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: 'Authenticate to view Library',
+            fallbackLabel: 'Use Passcode',
+            disableDeviceFallback: false,
+          });
 
-          if (hasHardware && isEnrolled) {
-            const result = await LocalAuthentication.authenticateAsync({
-              promptMessage: 'Authenticate to view Library',
-              fallbackLabel: 'Use Passcode',
-              disableDeviceFallback: false,
-            });
-
-            setIsAuthenticated(result.success);
-          } else {
-            // No biometric, allow access
-            setIsAuthenticated(true);
-          }
+          setIsAuthenticated(result.success);
         } else {
           setIsAuthenticated(true);
         }
@@ -156,18 +170,13 @@ export const LibraryScreen: React.FC = () => {
   );
 
   const handleRetryAuth = async () => {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Authenticate to view Library',
+      fallbackLabel: 'Use Passcode',
+      disableDeviceFallback: false,
+    });
 
-    if (hasHardware && isEnrolled) {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to view Library',
-        fallbackLabel: 'Use Passcode',
-        disableDeviceFallback: false,
-      });
-
-      setIsAuthenticated(result.success);
-    }
+    setIsAuthenticated(result.success);
   };
 
   // Show loading while checking auth

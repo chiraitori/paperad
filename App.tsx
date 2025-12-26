@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Alert } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, Text, Alert, AppState, AppStateStatus } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -54,11 +54,32 @@ export default function App() {
   const [currentVersion, setCurrentVersion] = useState('');
   const [latestRelease, setLatestRelease] = useState<ReleaseInfo | null>(null);
 
+  // Privacy overlay state - show when app is in background/inactive
+  const [isAppInactive, setIsAppInactive] = useState(false);
+  const appState = useRef(AppState.currentState);
+
   // Hook for handling quick action routing
   // Note: Since we're using React Navigation, the router implementation handles the navigation
   // based on the action params. However, since we might need custom handling for tabs,
   // we listen to the action here.
   const quickAction = useQuickAction();
+
+  // Listen for app state changes to show privacy overlay
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      // Show overlay when app goes to background or inactive (multitasking view)
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        setIsAppInactive(true);
+      } else if (nextAppState === 'active') {
+        setIsAppInactive(false);
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   // Check for updates on app start
   useEffect(() => {
@@ -178,8 +199,34 @@ export default function App() {
               onSkip={() => setUpdateModalVisible(false)}
             />
           )}
+          {/* Privacy overlay for multitasking - covers content when app is in background */}
+          {isAppInactive && (
+            <View style={styles.privacyOverlay}>
+              <Text style={styles.privacyIcon}>📚</Text>
+              <Text style={styles.privacyTitle}>Paperand</Text>
+            </View>
+          )}
         </LibraryProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  privacyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#1a1a2e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  privacyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  privacyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+});
