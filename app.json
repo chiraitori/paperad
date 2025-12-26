@@ -64,7 +64,8 @@
           "color": "#C0392B"
         }
       ],
-      "expo-quick-actions"
+      "expo-quick-actions",
+      "expo-screen-capture"
     ]
   }
 }

@@ -15,7 +15,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as ScreenCapture from 'expo-screen-capture';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { useTheme } from '../context/ThemeContext';
 import { useLibrary } from '../context/LibraryContext';
 import { MangaCard, EmptyState, MangaPreviewModal } from '../components';
@@ -68,6 +68,9 @@ export const LibraryScreen: React.FC = () => {
     };
   }, []);
 
+  // Prevent screen capture when library auth is enabled
+  usePreventScreenCapture(settings.libraryAuth ? 'library_auth' : undefined);
+
   // Load settings and check auth when screen is focused
   useFocusEffect(
     useCallback(() => {
@@ -75,14 +78,7 @@ export const LibraryScreen: React.FC = () => {
         const loadedSettings = await getGeneralSettings();
         setSettings(loadedSettings);
 
-        // Enable screen capture prevention if auth is required
         if (loadedSettings.libraryAuth) {
-          try {
-            await ScreenCapture.preventScreenCaptureAsync('library_auth');
-          } catch (e) {
-            console.warn('Failed to enable screen capture prevention:', e);
-          }
-
           // Require authentication - will use biometric or device PIN/passcode
           const result = await LocalAuthentication.authenticateAsync({
             promptMessage: 'Authenticate to view Library',
@@ -98,11 +94,10 @@ export const LibraryScreen: React.FC = () => {
       };
       loadAndCheckAuth();
 
-      // Reset auth and disable screen capture prevention when leaving screen
+      // Reset auth when leaving screen
       return () => {
         setIsAuthenticated(false);
         setAuthChecked(false);
-        ScreenCapture.allowScreenCaptureAsync('library_auth').catch(() => { });
       };
     }, [])
   );
