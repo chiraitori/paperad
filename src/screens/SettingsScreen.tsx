@@ -23,6 +23,7 @@ import { PickerModal } from '../components';
 import Constants from 'expo-constants';
 import * as Sharing from 'expo-sharing';
 import { Paths, File } from 'expo-file-system';
+import { t, getCurrentLanguage, setLanguage, SUPPORTED_LANGUAGES, LanguageCode } from '../services/i18nService';
 
 export const SettingsScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -30,10 +31,12 @@ export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [hideReadHistory, setHideReadHistory] = useState(false);
   const [errorPopups, setErrorPopups] = useState(true);
-  const [cacheSize, setCacheSize] = useState<string>('Calculating...');
+  const [cacheSize, setCacheSize] = useState<string>(t('common.loading'));
   const [isClearing, setIsClearing] = useState(false);
   const [cacheLimit, setCacheLimitState] = useState<CacheLimitOption>('500MB');
   const [showCachePicker, setShowCachePicker] = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [currentLang, setCurrentLang] = useState<LanguageCode>(getCurrentLanguage());
 
   const loadCacheSize = useCallback(async () => {
     const size = await getImageCacheSize();
@@ -49,18 +52,19 @@ export const SettingsScreen: React.FC = () => {
     useCallback(() => {
       loadCacheSize();
       loadCacheLimit();
+      setCurrentLang(getCurrentLanguage());
     }, [loadCacheSize, loadCacheLimit])
   );
 
   const handleCacheLimitChange = () => {
     const options: CacheLimitOption[] = ['No Cache', '300MB', '500MB', '1GB', '3GB', '5GB', '10GB'];
-    
+
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: [...options, 'Cancel'],
+          options: [...options, t('common.cancel')],
           cancelButtonIndex: options.length,
-          title: 'Image Cache Size',
+          title: t('settings.imageCacheSize'),
         },
         (buttonIndex) => {
           if (buttonIndex < options.length) {
@@ -80,14 +84,47 @@ export const SettingsScreen: React.FC = () => {
     setCacheLimit(option);
   };
 
+  const handleLanguageChange = () => {
+    const langCodes = Object.keys(SUPPORTED_LANGUAGES) as LanguageCode[];
+    const options = langCodes.map(code => SUPPORTED_LANGUAGES[code].nativeName);
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [...options, t('common.cancel')],
+          cancelButtonIndex: options.length,
+          title: t('settings.language'),
+        },
+        (buttonIndex) => {
+          if (buttonIndex < langCodes.length) {
+            handleLanguageSelect(langCodes[buttonIndex]);
+          }
+        }
+      );
+    } else {
+      setShowLanguagePicker(true);
+    }
+  };
+
+  const handleLanguageSelect = async (langCode: LanguageCode) => {
+    await setLanguage(langCode);
+    setCurrentLang(langCode);
+    // Force re-render by navigating away and back, or show alert
+    Alert.alert(
+      t('settings.languageChanged'),
+      t('settings.restartRequired'),
+      [{ text: t('common.ok') }]
+    );
+  };
+
   const handleClearCache = async () => {
     Alert.alert(
-      'Clear Image Cache',
-      `Are you sure you want to clear ${cacheSize} of cached images? This cannot be undone.`,
+      t('settings.clearImageCache'),
+      t('settings.clearCacheConfirm', { size: cacheSize }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Clear',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             setIsClearing(true);
@@ -95,11 +132,10 @@ export const SettingsScreen: React.FC = () => {
             setIsClearing(false);
             if (success) {
               setCacheSize('0 B');
-              Alert.alert('Success', 'Image cache cleared successfully');
+              Alert.alert(t('common.success'), t('settings.cacheClearedSuccess'));
             } else {
-              Alert.alert('Error', 'Failed to clear cache');
+              Alert.alert(t('common.error'), t('settings.cacheClearFailed'));
             }
-            // Refresh cache size
             loadCacheSize();
           },
         },
@@ -177,10 +213,15 @@ export const SettingsScreen: React.FC = () => {
     </View>
   );
 
+  const languageOptions = Object.entries(SUPPORTED_LANGUAGES).map(([code, lang]) => ({
+    value: code,
+    label: lang.nativeName,
+  }));
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Settings</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('settings.title')}</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -188,8 +229,8 @@ export const SettingsScreen: React.FC = () => {
         {renderSection(
           null,
           renderSettingItem({
-            title: 'Login to Paperand',
-            onPress: () => Alert.alert('Login', 'Login functionality not implemented'),
+            title: t('settings.loginToPaperand'),
+            onPress: () => Alert.alert(t('settings.login'), t('settings.loginNotImplemented')),
             showChevron: false,
           })
         )}
@@ -199,7 +240,7 @@ export const SettingsScreen: React.FC = () => {
           null,
           <>
             {renderSettingItem({
-              title: 'Hide Read History',
+              title: t('settings.hideReadHistory'),
               rightElement: (
                 <Switch
                   value={hideReadHistory}
@@ -213,15 +254,20 @@ export const SettingsScreen: React.FC = () => {
           </>
         )}
         <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-          Hides recently read chapters from history, chapter progress is still tracked however.
+          {t('settings.hideReadHistoryHint')}
         </Text>
 
         {/* Settings Section */}
         {renderSection(
-          'SETTINGS',
+          t('settings.settingsSection'),
           <>
             {renderSettingItem({
-              title: 'Error Popups',
+              title: t('settings.language'),
+              value: SUPPORTED_LANGUAGES[currentLang].nativeName,
+              onPress: handleLanguageChange,
+            })}
+            {renderSettingItem({
+              title: t('settings.errorPopups'),
               rightElement: (
                 <Switch
                   value={errorPopups}
@@ -233,36 +279,36 @@ export const SettingsScreen: React.FC = () => {
               showChevron: false,
             })}
             {renderSettingItem({
-              title: 'General Settings',
+              title: t('settings.generalSettings'),
               onPress: () => navigation.navigate('GeneralSettings'),
             })}
             {renderSettingItem({
-              title: 'Theme Settings',
+              title: t('settings.themeSettings'),
               onPress: () => navigation.navigate('ThemeSettings'),
             })}
             {renderSettingItem({
-              title: 'Extensions',
+              title: t('extensions.title'),
               onPress: () => navigation.navigate('Extensions'),
             })}
             {renderSettingItem({
-              title: 'Backups',
+              title: t('settings.backups'),
               onPress: () => navigation.navigate('Backups'),
             })}
             {renderSettingItem({
-              title: 'Clear Reading History',
+              title: t('settings.clearReadingHistory'),
               isDestructive: true,
               onPress: () => {
                 Alert.alert(
-                  'Clear Reading History',
-                  'Are you sure you want to clear all reading history? This will remove all entries except favorites.',
+                  t('settings.clearReadingHistory'),
+                  t('settings.clearHistoryConfirm'),
                   [
-                    { text: 'Cancel', style: 'cancel' },
+                    { text: t('common.cancel'), style: 'cancel' },
                     {
-                      text: 'Clear',
+                      text: t('common.delete'),
                       style: 'destructive',
                       onPress: async () => {
                         await clearHistory();
-                        Alert.alert('Success', 'Reading history cleared');
+                        Alert.alert(t('common.success'), t('settings.historyCleared'));
                       },
                     },
                   ]
@@ -271,9 +317,9 @@ export const SettingsScreen: React.FC = () => {
               showChevron: false,
             })}
             {renderSettingItem({
-              title: 'Attempt Database Repair',
+              title: t('settings.attemptDatabaseRepair'),
               isDestructive: true,
-              onPress: () => Alert.alert('Database Repair', 'Repair attempted'),
+              onPress: () => Alert.alert(t('settings.databaseRepair'), t('settings.repairAttempted')),
               showChevron: false,
             })}
           </>
@@ -281,15 +327,15 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Storage */}
         {renderSection(
-          'STORAGE',
+          t('settings.storageSection'),
           <>
             {renderSettingItem({
-              title: 'Image Cache Size',
+              title: t('settings.imageCacheSize'),
               value: cacheLimit,
               onPress: handleCacheLimitChange,
             })}
             {renderSettingItem({
-              title: 'Clear image cache',
+              title: t('settings.clearImageCache'),
               isDestructive: true,
               value: isClearing ? undefined : cacheSize,
               rightElement: isClearing ? (
@@ -303,17 +349,16 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Information */}
         {renderSection(
-          'INFORMATION',
+          t('settings.informationSection'),
           <>
             {renderSettingItem({
-              title: 'Developer',
+              title: t('settings.developer'),
               onPress: () => navigation.navigate('Developer'),
             })}
             {renderSettingItem({
-              title: 'Export app logs',
+              title: t('settings.exportAppLogs'),
               onPress: async () => {
                 try {
-                  // Create a log file with app info and debug data
                   const logData = {
                     timestamp: new Date().toISOString(),
                     app: {
@@ -327,36 +372,36 @@ export const SettingsScreen: React.FC = () => {
                       brand: Constants.deviceName || 'unknown',
                     },
                   };
-                  
+
                   const logContent = JSON.stringify(logData, null, 2);
                   const logFileName = `paperand-logs-${Date.now()}.json`;
                   const logFile = new File(Paths.cache, logFileName);
-                  
+
                   await logFile.create();
                   await logFile.write(logContent);
-                  
+
                   const canShare = await Sharing.isAvailableAsync();
                   if (canShare) {
                     await Sharing.shareAsync(logFile.uri, {
                       mimeType: 'application/json',
-                      dialogTitle: 'Export Paperand Logs',
+                      dialogTitle: t('settings.exportLogs'),
                     });
                   } else {
-                    Alert.alert('Error', 'Sharing is not available on this device');
+                    Alert.alert(t('common.error'), t('settings.sharingNotAvailable'));
                   }
                 } catch (error) {
                   console.error('Failed to export logs:', error);
-                  Alert.alert('Error', 'Failed to export logs');
+                  Alert.alert(t('common.error'), t('settings.exportLogsFailed'));
                 }
               },
             })}
             {renderSettingItem({
-              title: 'Discord server',
-              subtitle: 'Coming Soon',
-              onPress: () => Alert.alert('Discord', 'Discord server coming soon!'),
+              title: t('settings.discordServer'),
+              subtitle: t('common.comingSoon'),
+              onPress: () => Alert.alert('Discord', t('settings.discordComingSoon')),
             })}
             {renderSettingItem({
-              title: 'Credits',
+              title: t('settings.credits'),
               onPress: () => navigation.navigate('Credits'),
             })}
           </>
@@ -370,12 +415,24 @@ export const SettingsScreen: React.FC = () => {
       {/* Cache Size Picker Modal for Android */}
       <PickerModal
         visible={showCachePicker}
-        title="Image Cache Size"
-        subtitle="Choose maximum storage for cached images"
+        title={t('settings.imageCacheSize')}
+        subtitle={t('settings.imageCacheSizeHint')}
         options={['No Cache', '300MB', '500MB', '1GB', '3GB', '5GB', '10GB'] as CacheLimitOption[]}
         selectedValue={cacheLimit}
         onSelect={handleCacheLimitSelect}
         onClose={() => setShowCachePicker(false)}
+      />
+
+      {/* Language Picker Modal for Android */}
+      <PickerModal
+        visible={showLanguagePicker}
+        title={t('settings.language')}
+        subtitle={t('settings.selectLanguage')}
+        options={Object.keys(SUPPORTED_LANGUAGES) as LanguageCode[]}
+        selectedValue={currentLang}
+        onSelect={handleLanguageSelect}
+        onClose={() => setShowLanguagePicker(false)}
+        renderOption={(option) => SUPPORTED_LANGUAGES[option as LanguageCode].nativeName}
       />
     </View>
   );

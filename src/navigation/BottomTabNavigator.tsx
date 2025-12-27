@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { DiscoverScreen, SearchScreen, LibraryScreen, HistoryScreen, SettingsScreen } from '../screens';
 import { BottomTabParamList } from '../types';
+import { t } from '../services/i18nService';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -36,7 +37,7 @@ export const BottomTabNavigator: React.FC = () => {
         name="Discover"
         component={DiscoverScreen}
         options={{
-          tabBarLabel: 'Discover',
+          tabBarLabel: t('tabs.discover'),
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "book" : "book-outline"}
@@ -50,7 +51,7 @@ export const BottomTabNavigator: React.FC = () => {
         name="Search"
         component={SearchScreen}
         options={{
-          tabBarLabel: 'Search',
+          tabBarLabel: t('tabs.search'),
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "search" : "search-outline"}
@@ -64,7 +65,7 @@ export const BottomTabNavigator: React.FC = () => {
         name="Library"
         component={LibraryScreen}
         options={{
-          tabBarLabel: 'Library',
+          tabBarLabel: t('tabs.library'),
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "bookmark" : "bookmark-outline"}
@@ -78,7 +79,7 @@ export const BottomTabNavigator: React.FC = () => {
         name="History"
         component={HistoryScreen}
         options={{
-          tabBarLabel: 'History',
+          tabBarLabel: t('tabs.history'),
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "time" : "time-outline"}
@@ -92,7 +93,7 @@ export const BottomTabNavigator: React.FC = () => {
         name="Settings"
         component={SettingsScreen}
         options={{
-          tabBarLabel: 'Settings',
+          tabBarLabel: t('tabs.settings'),
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "settings" : "settings-outline"}

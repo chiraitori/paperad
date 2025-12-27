@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { t } from '../services/i18nService';
 
 interface PickerModalProps<T extends string> {
   visible: boolean;
@@ -19,6 +20,7 @@ interface PickerModalProps<T extends string> {
   selectedValue: T;
   onSelect: (value: T) => void;
   onClose: () => void;
+  renderOption?: (option: T) => string;
 }
 
 export function PickerModal<T extends string>({
@@ -29,12 +31,20 @@ export function PickerModal<T extends string>({
   selectedValue,
   onSelect,
   onClose,
+  renderOption,
 }: PickerModalProps<T>) {
   const { theme } = useTheme();
 
   const handleSelect = (option: T) => {
     onSelect(option);
     onClose();
+  };
+
+  const getOptionLabel = (option: T): string => {
+    if (renderOption) {
+      return renderOption(option);
+    }
+    return option;
   };
 
   return (
@@ -71,7 +81,7 @@ export function PickerModal<T extends string>({
                         selectedValue === option && { color: theme.primary, fontWeight: '600' },
                       ]}
                     >
-                      {option}
+                      {getOptionLabel(option)}
                     </Text>
                     {selectedValue === option && (
                       <Ionicons name="checkmark" size={22} color={theme.primary} />
@@ -83,7 +93,7 @@ export function PickerModal<T extends string>({
                 style={[styles.cancelButton, { borderTopColor: theme.border }]}
                 onPress={onClose}
               >
-                <Text style={[styles.cancelText, { color: theme.primary }]}>Cancel</Text>
+                <Text style={[styles.cancelText, { color: theme.primary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </TouchableWithoutFeedback>
