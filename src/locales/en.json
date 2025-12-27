@@ -201,7 +201,12 @@
         "discordServer": "Discord server",
         "discordComingSoon": "Discord server coming soon!",
         "noCache": "No Cache",
-        "contribute": "Contribute Translations"
+        "contribute": "Contribute Translations",
+        "changeLanguageTitle": "Change Language",
+        "changeLanguageInstructions": "To change the app language on iOS:\\n\\n1. Tap 'Continue' to open Settings\\n2. Tap 'Language' to select your preferred language\\n3. If your language is not available, go to iPhone Settings > Paperand to set your preferred language",
+        "languageSetting": "Language Setting",
+        "openInSettings": "Open in iOS Settings",
+        "iosLanguageHint": "On iOS, the app language follows your device or app-specific language setting. Tap above to change it in Settings."
     },
     "discover": {
         "title": "Discover",
@@ -308,6 +313,10 @@
     "theme": {
         "title": "Theme Settings",
         "themeMode": "Theme Mode",
+        "appearance": "APPEARANCE",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System",
         "default": "Default (Paperback)",
         "customThemes": "CUSTOM THEMES",
         "manage": "MANAGE",

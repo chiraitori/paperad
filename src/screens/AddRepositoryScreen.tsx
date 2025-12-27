@@ -179,13 +179,12 @@ export const AddRepositoryScreen: React.FC = () => {
                 borderColor: theme.border,
                 color: theme.text
               }]}
-              }]}
-            placeholder={t('repositories.repoNamePlaceholder')}
-            placeholderTextColor={theme.textSecondary}
-            value={repoName}
-            onChangeText={setRepoName}
-            autoCapitalize="words"
-            autoCorrect={false}
+              placeholder={t('repositories.repoNamePlaceholder')}
+              placeholderTextColor={theme.textSecondary}
+              value={repoName}
+              onChangeText={setRepoName}
+              autoCapitalize="words"
+              autoCorrect={false}
             />
 
             <TextInput
@@ -194,14 +193,13 @@ export const AddRepositoryScreen: React.FC = () => {
                 borderColor: theme.border,
                 color: theme.text
               }]}
-              }]}
-            placeholder={t('repositories.repoUrlPlaceholder')}
-            placeholderTextColor={theme.textSecondary}
-            value={repoUrl}
-            onChangeText={setRepoUrl}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
+              placeholder={t('repositories.repoUrlPlaceholder')}
+              placeholderTextColor={theme.textSecondary}
+              value={repoUrl}
+              onChangeText={setRepoUrl}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
             />
           </View>
 

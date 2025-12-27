@@ -7,8 +7,6 @@ import {
     TouchableOpacity,
     Switch,
     Platform,
-    ActionSheetIOS,
-    Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,8 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useTheme } from '../context/ThemeContext';
-import { PickerModal } from '../components/PickerModal';
 import { AppDialog } from '../components/AppDialog';
+import { NativeDropdown } from '../components/NativeDropdown';
 import { t, getCurrentLanguage, SUPPORTED_LANGUAGES, LanguageCode } from '../services/i18nService';
 import { RootStackParamList } from '../types';
 
@@ -57,7 +55,6 @@ export const GeneralSettingsScreen: React.FC = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     const [settings, setSettings] = useState<GeneralSettings>(defaultSettings);
-    const [showSortPicker, setShowSortPicker] = useState(false);
     const [currentLang, setCurrentLang] = useState<LanguageCode>(getCurrentLanguage());
     const [dialog, setDialog] = useState<DialogState>({ visible: false, title: '', message: '', buttons: [] });
 
@@ -147,22 +144,6 @@ export const GeneralSettingsScreen: React.FC = () => {
         }
     };
 
-    const showSortOptions = () => {
-        if (Platform.OS === 'ios') {
-            ActionSheetIOS.showActionSheetWithOptions(
-                {
-                    options: [t('common.cancel'), 'Ascending', 'Descending'],
-                    cancelButtonIndex: 0,
-                },
-                (buttonIndex) => {
-                    if (buttonIndex === 1) updateSetting('chapterListSort', 'ascending');
-                    if (buttonIndex === 2) updateSetting('chapterListSort', 'descending');
-                }
-            );
-        } else {
-            setShowSortPicker(true);
-        }
-    };
 
     const navigateToLanguageSettings = () => {
         navigation.navigate('LanguageSettings');
@@ -309,12 +290,27 @@ export const GeneralSettingsScreen: React.FC = () => {
                 <View style={styles.section}>
                     {renderSectionHeader(t('generalSettings.chapterListSort'))}
                     <View style={[styles.sectionContent, { backgroundColor: theme.card }]}>
-                        {renderItem({
-                            title: t('generalSettings.chapterSort'),
-                            value: settings.chapterListSort === 'ascending' ? t('generalSettings.ascending') : t('generalSettings.descending'),
-                            showChevron: true,
-                            onPress: showSortOptions
-                        })}
+                        <NativeDropdown
+                            options={[
+                                { label: t('generalSettings.ascending'), value: 'ascending' },
+                                { label: t('generalSettings.descending'), value: 'descending' },
+                            ]}
+                            selectedValue={settings.chapterListSort}
+                            onSelect={(value) => updateSetting('chapterListSort', value as 'ascending' | 'descending')}
+                            title={t('generalSettings.chapterSort')}
+                        >
+                            <View style={[styles.itemContainer, { borderBottomColor: theme.border }]}>
+                                <Text style={[styles.itemTitle, { color: theme.text }]}>
+                                    {t('generalSettings.chapterSort')}
+                                </Text>
+                                <View style={styles.rightContainer}>
+                                    <Text style={[styles.itemValue, { color: theme.textSecondary }]}>
+                                        {settings.chapterListSort === 'ascending' ? t('generalSettings.ascending') : t('generalSettings.descending')}
+                                    </Text>
+                                    <Ionicons name="chevron-expand" size={20} color={theme.textSecondary} />
+                                </View>
+                            </View>
+                        </NativeDropdown>
                     </View>
                 </View>
 
@@ -421,21 +417,6 @@ export const GeneralSettingsScreen: React.FC = () => {
 
             </ScrollView>
 
-            {/* Sort Picker Modal (Android) */}
-            <PickerModal
-                visible={showSortPicker}
-                onClose={() => setShowSortPicker(false)}
-                title="Chapter List Sort"
-                options={[
-                    { label: 'Ascending', value: 'ascending' },
-                    { label: 'Descending', value: 'descending' },
-                ]}
-                selectedValue={settings.chapterListSort}
-                onSelect={(value) => {
-                    updateSetting('chapterListSort', value as 'ascending' | 'descending');
-                    setShowSortPicker(false);
-                }}
-            />
 
             {/* Custom styled dialog */}
             <AppDialog

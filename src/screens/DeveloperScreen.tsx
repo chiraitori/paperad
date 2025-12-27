@@ -89,7 +89,7 @@ export const DeveloperScreen: React.FC = () => {
         `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}`
       ).join('\n');
 
-      const fileUri = FileSystem.documentDirectory + `developer_logs_${Date.now()}.txt`;
+      const fileUri = (FileSystem.documentDirectory || '') + `developer_logs_${Date.now()}.txt`;
       await FileSystem.writeAsStringAsync(fileUri, logContent, {
         encoding: FileSystem.EncodingType.UTF8,
       });

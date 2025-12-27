@@ -8,12 +8,13 @@ import {
   Linking,
   Image,
   Platform,
-  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { t } from '../services/i18nService';
+import { useDialog } from '../hooks';
+import { AppDialog } from '../components';
 
 interface Contributor {
   name: string;
@@ -42,6 +43,7 @@ const SPECIAL_THANKS = [
 export const CreditsScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const { dialogVisible, dialogConfig, showDialog, hideDialog } = useDialog();
 
   const openGithub = (username: string) => {
     Linking.openURL(`https://github.com/${username}`);
@@ -141,7 +143,7 @@ export const CreditsScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.linkItem, { borderBottomColor: theme.border }]}
-              onPress={() => Alert.alert(t('credits.discordAlert'), t('credits.discordMessage'))}
+              onPress={() => showDialog(t('credits.discordAlert'), t('credits.discordMessage'))}
             >
               <Ionicons name="logo-discord" size={24} color={theme.text} />
               <Text style={[styles.linkText, { color: theme.text }]}>{t('credits.discord')}</Text>
@@ -154,6 +156,15 @@ export const CreditsScreen: React.FC = () => {
           {t('credits.madeWith')}
         </Text>
       </ScrollView>
+
+      {/* Material You Dialog for Android */}
+      <AppDialog
+        visible={dialogVisible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        buttons={dialogConfig.buttons}
+        onDismiss={hideDialog}
+      />
     </View>
   );
 };

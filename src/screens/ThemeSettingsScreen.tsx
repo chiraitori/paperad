@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,11 @@ import {
   Platform,
   ScrollView,
   FlatList,
-  ActionSheetIOS,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { PickerModal } from '../components';
+import { NativeDropdown } from '../components';
 import { t } from '../services/i18nService';
 
 export const ThemeSettingsScreen: React.FC = () => {
@@ -28,47 +27,16 @@ export const ThemeSettingsScreen: React.FC = () => {
     deleteCustomTheme,
   } = useTheme();
   const navigation = useNavigation();
-  const [showThemeModePicker, setShowThemeModePicker] = useState(false);
 
   const getThemeLabel = (mode: string) => {
     switch (mode) {
-      case 'light': return t('theme.themeMode') === 'Chế độ chủ đề' ? 'Sáng' : 'Light'; // Using simple check or add specific keys for modes
-      case 'dark': return t('theme.themeMode') === 'Chế độ chủ đề' ? 'Tối' : 'Dark';
-      case 'system': return t('theme.themeMode') === 'Chế độ chủ đề' ? 'Hệ thống' : 'System';
-      default: return t('theme.themeMode') === 'Chế độ chủ đề' ? 'Hệ thống' : 'System';
+      case 'light': return t('theme.light');
+      case 'dark': return t('theme.dark');
+      case 'system': return t('theme.system');
+      default: return t('theme.system');
     }
   };
 
-  const showThemePicker = () => {
-    const options = ['Light', 'Dark', 'System'];
-    const values: ('light' | 'dark' | 'system')[] = ['light', 'dark', 'system'];
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: [...options, t('common.cancel')],
-          cancelButtonIndex: options.length,
-          title: t('theme.themeMode'),
-        },
-        (buttonIndex) => {
-          if (buttonIndex < options.length) {
-            setThemeMode(values[buttonIndex]);
-          }
-        }
-      );
-    } else {
-      setShowThemeModePicker(true);
-    }
-  };
-
-  const handleThemeModeSelect = (option: string) => {
-    const modeMap: Record<string, 'light' | 'dark' | 'system'> = {
-      'Light': 'light',
-      'Dark': 'dark',
-      'System': 'system',
-    };
-    setThemeMode(modeMap[option] || 'system');
-  };
 
   const handleImportTheme = async () => {
     try {
@@ -243,13 +211,36 @@ export const ThemeSettingsScreen: React.FC = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Theme Mode */}
         {renderSection(
-          t('theme.appearance'), // reuse more.appearance or theme.appearance if added. using more.appearance (APPEARANCE)
-          renderSettingItem({
-            title: t('theme.themeMode'),
-            value: getThemeLabel(themeMode),
-            onPress: showThemePicker,
-            showSelector: true,
-          })
+          t('theme.appearance'),
+          <NativeDropdown
+            options={[
+              { label: t('theme.light'), value: 'light' },
+              { label: t('theme.dark'), value: 'dark' },
+              { label: t('theme.system'), value: 'system' },
+            ]}
+            selectedValue={themeMode}
+            onSelect={(value) => setThemeMode(value as 'light' | 'dark' | 'system')}
+            title={t('theme.themeMode')}
+          >
+            <View style={[styles.settingItem, { borderBottomColor: theme.border }]}>
+              <View style={styles.leftContent}>
+                <Text style={[styles.settingTitle, { color: theme.text }]}>
+                  {t('theme.themeMode')}
+                </Text>
+              </View>
+              <View style={styles.rightContainer}>
+                <Text style={[styles.valueText, { color: theme.textSecondary }]}>
+                  {getThemeLabel(themeMode)}
+                </Text>
+                <Ionicons
+                  name="chevron-expand"
+                  size={18}
+                  color={theme.textSecondary}
+                  style={styles.selectorIcon}
+                />
+              </View>
+            </View>
+          </NativeDropdown>
         )}
 
         {/* Built-in Theme */}
@@ -304,17 +295,6 @@ export const ThemeSettingsScreen: React.FC = () => {
           </Text>
         </View>
       </ScrollView>
-
-      {/* Theme Mode Picker Modal for Android */}
-      <PickerModal
-        visible={showThemeModePicker}
-        title={t('theme.themeMode')}
-        subtitle={t('theme.themeMode')} // or duplicate title or generic hint
-        options={['Light', 'Dark', 'System']} // These should be localized values if they affect display, but logic uses indices or map
-        selectedValue={getThemeLabel(themeMode)}
-        onSelect={handleThemeModeSelect}
-        onClose={() => setShowThemeModePicker(false)}
-      />
     </View>
   );
 };

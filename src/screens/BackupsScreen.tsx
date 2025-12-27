@@ -5,13 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Alert,
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { t } from '../services/i18nService';
+import { useDialog } from '../hooks';
+import { AppDialog } from '../components';
 
 interface Backup {
   id: string;
@@ -23,6 +24,7 @@ export const BackupsScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const [backups, setBackups] = useState<Backup[]>([]);
+  const { dialogVisible, dialogConfig, showDialog, hideDialog } = useDialog();
 
   const handleNewBackup = () => {
     const newBackup: Backup = {
@@ -31,15 +33,15 @@ export const BackupsScreen: React.FC = () => {
       date: new Date().toISOString(),
     };
     setBackups([newBackup, ...backups]);
-    Alert.alert(t('backups.backupCreated'), t('backups.backupCreatedMessage'));
+    showDialog(t('backups.backupCreated'), t('backups.backupCreatedMessage'));
   };
 
   const handleExportBackup = (backup: Backup) => {
-    Alert.alert(t('backups.exportBackup'), t('backups.exportMessage', { name: backup.name }));
+    showDialog(t('backups.exportBackup'), t('backups.exportMessage', { name: backup.name }));
   };
 
   const handleDeleteBackup = (backup: Backup) => {
-    Alert.alert(
+    showDialog(
       t('backups.deleteTitle'),
       t('backups.deleteConfirm', { name: backup.name }),
       [
@@ -49,6 +51,7 @@ export const BackupsScreen: React.FC = () => {
           style: 'destructive',
           onPress: () => {
             setBackups(backups.filter(b => b.id !== backup.id));
+            hideDialog();
           },
         },
       ]
@@ -106,6 +109,15 @@ export const BackupsScreen: React.FC = () => {
           />
         ) : null}
       </View>
+
+      {/* Material You Dialog for Android */}
+      <AppDialog
+        visible={dialogVisible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        buttons={dialogConfig.buttons}
+        onDismiss={hideDialog}
+      />
     </View>
   );
 };

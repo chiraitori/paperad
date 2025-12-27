@@ -33,9 +33,9 @@ export const MoreScreen: React.FC = () => {
   };
 
   const themeOptions: { key: ThemeMode; label: string }[] = [
-    { key: 'light', label: t('theme.themeMode') === 'Chế độ chủ đề' ? 'Sáng' : 'Light' }, // Simple hack for now or add keys
-    { key: 'dark', label: t('theme.themeMode') === 'Chế độ chủ đề' ? 'Tối' : 'Dark' },
-    { key: 'system', label: t('theme.themeMode') === 'Chế độ chủ đề' ? 'Hệ thống' : 'System' },
+    { key: 'light', label: t('theme.light') },
+    { key: 'dark', label: t('theme.dark') },
+    { key: 'system', label: t('theme.system') },
   ];
 
   const renderSettingItem = (

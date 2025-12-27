@@ -9,7 +9,6 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
-  ActionSheetIOS,
   Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -19,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLibrary } from '../context/LibraryContext';
 import { getImageCacheSize, formatCacheSize, clearImageCache, getCacheLimit, setCacheLimit, CACHE_LIMIT_OPTIONS, CacheLimitOption } from '../services/cacheService';
-import { PickerModal } from '../components';
+import { PickerModal, NativeDropdown } from '../components';
 import Constants from 'expo-constants';
 import * as Sharing from 'expo-sharing';
 import { Paths, File } from 'expo-file-system';
@@ -54,28 +53,7 @@ export const SettingsScreen: React.FC = () => {
   );
 
   const handleCacheLimitChange = () => {
-    const options: CacheLimitOption[] = ['No Cache', '300MB', '500MB', '1GB', '3GB', '5GB', '10GB'];
-    const displayOptions = options.map(opt => opt === 'No Cache' ? t('settings.noCache') : opt);
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: [...displayOptions, t('common.cancel')],
-          cancelButtonIndex: options.length,
-          title: t('settings.imageCacheSize'),
-        },
-        (buttonIndex) => {
-          if (buttonIndex < options.length) {
-            const selected = options[buttonIndex];
-            setCacheLimitState(selected);
-            setCacheLimit(selected);
-          }
-        }
-      );
-    } else {
-    } else {
-      setShowCachePicker(true);
-    }
+    setShowCachePicker(true);
   };
 
   const handleCacheLimitSelect = (displayValue: string) => {
@@ -291,11 +269,47 @@ export const SettingsScreen: React.FC = () => {
         {renderSection(
           t('settings.storageSection'),
           <>
-            {renderSettingItem({
-              title: t('settings.imageCacheSize'),
-              value: cacheLimit === 'No Cache' ? t('settings.noCache') : cacheLimit,
-              onPress: handleCacheLimitChange,
-            })}
+            {Platform.OS === 'ios' ? (
+              <NativeDropdown
+                options={['No Cache', '300MB', '500MB', '1GB', '3GB', '5GB', '10GB'].map(opt => ({
+                  label: opt === 'No Cache' ? t('settings.noCache') : opt,
+                  value: opt,
+                }))}
+                selectedValue={cacheLimit}
+                onSelect={(value) => {
+                  setCacheLimitState(value as CacheLimitOption);
+                  setCacheLimit(value as CacheLimitOption);
+                }}
+                title={t('settings.imageCacheSize')}
+              >
+                <View
+                  style={[styles.settingItem, { borderBottomColor: theme.border }]}
+                >
+                  <View style={styles.settingContent}>
+                    <Text style={[styles.settingTitle, { color: theme.text }]}>
+                      {t('settings.imageCacheSize')}
+                    </Text>
+                  </View>
+                  <View style={styles.rightContainer}>
+                    <Text style={[styles.valueText, { color: theme.textSecondary }]}>
+                      {cacheLimit === 'No Cache' ? t('settings.noCache') : cacheLimit}
+                    </Text>
+                    <Ionicons
+                      name="chevron-expand"
+                      size={20}
+                      color={theme.textSecondary}
+                      style={styles.chevron}
+                    />
+                  </View>
+                </View>
+              </NativeDropdown>
+            ) : (
+              renderSettingItem({
+                title: t('settings.imageCacheSize'),
+                value: cacheLimit === 'No Cache' ? t('settings.noCache') : cacheLimit,
+                onPress: handleCacheLimitChange,
+              })
+            )}
             {renderSettingItem({
               title: t('settings.clearImageCache'),
               isDestructive: true,
@@ -375,15 +389,17 @@ export const SettingsScreen: React.FC = () => {
       </ScrollView>
 
       {/* Cache Size Picker Modal for Android */}
-      <PickerModal
-        visible={showCachePicker}
-        title={t('settings.imageCacheSize')}
-        subtitle={t('settings.imageCacheSizeHint')}
-        options={['No Cache', '300MB', '500MB', '1GB', '3GB', '5GB', '10GB'].map(opt => opt === 'No Cache' ? t('settings.noCache') : opt)}
-        selectedValue={cacheLimit === 'No Cache' ? t('settings.noCache') : cacheLimit}
-        onSelect={handleCacheLimitSelect}
-        onClose={() => setShowCachePicker(false)}
-      />
+      {Platform.OS === 'android' && (
+        <PickerModal
+          visible={showCachePicker}
+          title={t('settings.imageCacheSize')}
+          subtitle={t('settings.imageCacheSizeHint')}
+          options={['No Cache', '300MB', '500MB', '1GB', '3GB', '5GB', '10GB'].map(opt => opt === 'No Cache' ? t('settings.noCache') : opt)}
+          selectedValue={cacheLimit === 'No Cache' ? t('settings.noCache') : cacheLimit}
+          onSelect={handleCacheLimitSelect}
+          onClose={() => setShowCachePicker(false)}
+        />
+      )}
     </View>
   );
 };

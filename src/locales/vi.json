@@ -201,7 +201,12 @@
         "discordServer": "Server Discord",
         "discordComingSoon": "Server Discord sắp có!",
         "noCache": "Không lưu cache",
-        "contribute": "Đóng góp bản dịch"
+        "contribute": "Đóng góp bản dịch",
+        "changeLanguageTitle": "Thay đổi ngôn ngữ",
+        "changeLanguageInstructions": "Để thay đổi ngôn ngữ ứng dụng trên iOS:\\n\\n1. Nhấn 'Tiếp tục' để mở Cài đặt\\n2. Nhấn 'Ngôn ngữ' để chọn ngôn ngữ bạn muốn\\n3. Nếu ngôn ngữ không khả dụng, vui lòng chuyển đến Cài đặt iPhone > Paperand để thiết lập ngôn ngữ ưu tiên",
+        "languageSetting": "Thiết lập ngôn ngữ",
+        "openInSettings": "Mở trong Cài đặt iOS",
+        "iosLanguageHint": "Trên iOS, ngôn ngữ ứng dụng theo cài đặt ngôn ngữ thiết bị hoặc ứng dụng. Nhấn phía trên để thay đổi trong Cài đặt."
     },
     "discover": {
         "title": "Khám phá",
@@ -308,6 +313,10 @@
     "theme": {
         "title": "Cài đặt chủ đề",
         "themeMode": "Chế độ chủ đề",
+        "appearance": "GIAO DIỆN",
+        "light": "Sáng",
+        "dark": "Tối",
+        "system": "Hệ thống",
         "default": "Mặc định (Paperback)",
         "customThemes": "CHỦ ĐỀ TÙY CHỈNH",
         "manage": "QUẢN LÝ",

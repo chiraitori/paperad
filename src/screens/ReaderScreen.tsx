@@ -44,6 +44,7 @@ const InfoModal: React.FC<{
   onSearchTag: (tag: string) => void;
 }> = ({ visible, onClose, manga, chapter, currentPage, totalPages, onContinueReading, onSearchTag }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const { theme } = useTheme(); // Must be before any early returns
 
   if (!manga || !chapter) return null;
 
@@ -56,8 +57,6 @@ const InfoModal: React.FC<{
     onClose();
     onSearchTag(tag);
   };
-
-  const { theme } = useTheme(); // Use theme for consistent colors
 
   const getStatusColor = () => {
     if (manga.status === 'completed') return theme.success;

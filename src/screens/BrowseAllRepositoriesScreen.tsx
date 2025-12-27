@@ -325,157 +325,155 @@ export const BrowseAllRepositoriesScreen: React.FC = () => {
           {repoExtensions.length === 0 && (
             <View style={styles.emptyContainer}>
               <Ionicons name="cube-outline" size={48} color={theme.textSecondary} />
-              <View style={styles.emptyContainer}>
-                <Ionicons name="cube-outline" size={48} color={theme.textSecondary} />
-                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                  {t('repositories.noRepos')}
-                </Text>
-                <Text style={[styles.emptySubText, { color: theme.textSecondary }]}>
-                  {t('repositories.noReposHint')}
-                </Text>
-              </View>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                {t('repositories.noRepos')}
+              </Text>
+              <Text style={[styles.emptySubText, { color: theme.textSecondary }]}>
+                {t('repositories.noReposHint')}
+              </Text>
+            </View>
           )}
-            </ScrollView>
-          )}
+        </ScrollView>
+      )}
 
-          {/* Material You Dialog for Android */}
-          <AppDialog
-            visible={dialogVisible}
-            title={dialogConfig.title}
-            message={dialogConfig.message}
-            buttons={dialogConfig.buttons}
-            onDismiss={() => setDialogVisible(false)}
-          />
-        </View>
-      );
+      {/* Material You Dialog for Android */}
+      <AppDialog
+        visible={dialogVisible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        buttons={dialogConfig.buttons}
+        onDismiss={() => setDialogVisible(false)}
+      />
+    </View>
+  );
 };
 
-      const styles = StyleSheet.create({
-        container: {
-        flex: 1,
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
   },
-      header: {
-        flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 8,
-      paddingTop: 50,
-      paddingBottom: 12,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingTop: 50,
+    paddingBottom: 12,
   },
-      backButton: {
-        flexDirection: 'row',
-      alignItems: 'center',
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-      backText: {
-        fontSize: 17,
-      marginLeft: -4,
+  backText: {
+    fontSize: 17,
+    marginLeft: -4,
   },
-      loadingContainer: {
-        flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-      loadingText: {
-        marginTop: 12,
-      fontSize: 15,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
   },
-      content: {
-        paddingBottom: 40,
+  content: {
+    paddingBottom: 40,
   },
-      section: {
-        marginBottom: 24,
+  section: {
+    marginBottom: 24,
   },
-      sectionTitle: {
-        fontSize: 13,
-      fontWeight: '400',
-      marginLeft: 16,
-      marginBottom: 8,
-      letterSpacing: 0.5,
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    marginLeft: 16,
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
-      sectionContent: {
-        marginHorizontal: 16,
-      borderRadius: 10,
-      overflow: 'hidden',
+  sectionContent: {
+    marginHorizontal: 16,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
-      extensionItem: {
-        flexDirection: 'row',
-      alignItems: 'center',
-      padding: 12,
-      borderBottomWidth: StyleSheet.hairlineWidth,
+  extensionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-      iconContainer: {
-        width: 50,
-      height: 50,
-      borderRadius: 8,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 12,
-      overflow: 'hidden',
+  iconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
   },
-      iconImage: {
-        width: 50,
-      height: 50,
-      borderRadius: 8,
+  iconImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
   },
-      extensionContent: {
-        flex: 1,
+  extensionContent: {
+    flex: 1,
   },
-      extensionName: {
-        fontSize: 17,
-      fontWeight: '500',
-      marginBottom: 2,
+  extensionName: {
+    fontSize: 17,
+    fontWeight: '500',
+    marginBottom: 2,
   },
-      extensionAuthor: {
-        fontSize: 13,
-      marginBottom: 6,
+  extensionAuthor: {
+    fontSize: 13,
+    marginBottom: 6,
   },
-      tagsRow: {
-        flexDirection: 'row',
-      alignItems: 'center',
-      flexWrap: 'wrap',
-      gap: 6,
+  tagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
   },
-      actionBtn: {
-        width: 22,
-      height: 22,
-      borderRadius: 5,
-      justifyContent: 'center',
-      alignItems: 'center',
+  actionBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-      tag: {
-        paddingHorizontal: 6,
-      paddingVertical: 3,
-      borderRadius: 4,
+  tag: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
-      tagText: {
-        fontSize: 11,
-      fontWeight: '600',
+  tagText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
-      actionButton: {
-        paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 16,
-      minWidth: 70,
-      alignItems: 'center',
-      justifyContent: 'center',
+  actionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-      actionButtonText: {
-        fontSize: 13,
-      fontWeight: '700',
+  actionButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
-      emptyContainer: {
-        flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingTop: 100,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
   },
-      emptyText: {
-        fontSize: 16,
-      marginTop: 12,
+  emptyText: {
+    fontSize: 16,
+    marginTop: 12,
   },
-      emptySubText: {
-        fontSize: 14,
-      marginTop: 8,
-      textAlign: 'center',
-      paddingHorizontal: 32,
+  emptySubText: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
 });
