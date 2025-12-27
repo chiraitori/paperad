@@ -270,54 +270,44 @@ export const SettingsScreen: React.FC = () => {
           t('settings.storageSection'),
           <>
             {Platform.OS === 'ios' ? (
-              <NativeDropdown
-                options={['No Cache', '300MB', '500MB', '1GB', '3GB', '5GB', '10GB'].map(opt => ({
-                  label: opt === 'No Cache' ? t('settings.noCache') : opt,
-                  value: opt,
-                }))}
-                selectedValue={cacheLimit}
-                onSelect={(value) => {
-                  setCacheLimitState(value as CacheLimitOption);
-                  setCacheLimit(value as CacheLimitOption);
-                }}
-                <View
-                  style={[styles.settingItem, { borderBottomColor: theme.border }]}
-                >
-                  <View style={styles.settingContent}>
-                    <Text style={[styles.settingTitle, { color: theme.text }]}>
-                      {t('settings.imageCacheSize')}
-                    </Text>
-                  </View>
-                  <NativeDropdown
-                    options={[
-                      { label: t('settings.noCache'), value: 'No Cache' },
-                      { label: '300MB', value: '300MB' },
-                      { label: '500MB', value: '500MB' },
-                      { label: '1GB', value: '1GB' },
-                      { label: '3GB', value: '3GB' },
-                      { label: '5GB', value: '5GB' },
-                      { label: '10GB', value: '10GB' },
-                    ]}
-                    selectedValue={cacheLimit}
-                    onSelect={(value) => {
-                      setCacheLimitState(value as CacheLimitOption);
-                      setCacheLimit(value as CacheLimitOption);
-                    }}
-                    title={t('settings.imageCacheSize')}
-                  >
-                    <View style={styles.rightContainer}>
-                      <Text style={[styles.valueText, { color: theme.textSecondary }]}>
-                        {cacheLimit === 'No Cache' ? t('settings.noCache') : cacheLimit}
-                      </Text>
-                      <Ionicons
-                        name="chevron-expand"
-                        size={20}
-                        color={theme.textSecondary}
-                        style={styles.chevron}
-                      />
-                    </View>
-                  </NativeDropdown>
+              <View
+                style={[styles.settingItem, { borderBottomColor: theme.border }]}
+              >
+                <View style={styles.settingContent}>
+                  <Text style={[styles.settingTitle, { color: theme.text }]}>
+                    {t('settings.imageCacheSize')}
+                  </Text>
                 </View>
+                <NativeDropdown
+                  options={[
+                    { label: t('settings.noCache'), value: 'No Cache' },
+                    { label: '300MB', value: '300MB' },
+                    { label: '500MB', value: '500MB' },
+                    { label: '1GB', value: '1GB' },
+                    { label: '3GB', value: '3GB' },
+                    { label: '5GB', value: '5GB' },
+                    { label: '10GB', value: '10GB' },
+                  ]}
+                  selectedValue={cacheLimit}
+                  onSelect={(value) => {
+                    setCacheLimitState(value as CacheLimitOption);
+                    setCacheLimit(value as CacheLimitOption);
+                  }}
+                  title={t('settings.imageCacheSize')}
+                >
+                  <View style={styles.rightContainer}>
+                    <Text style={[styles.valueText, { color: theme.textSecondary }]}>
+                      {cacheLimit === 'No Cache' ? t('settings.noCache') : cacheLimit}
+                    </Text>
+                    <Ionicons
+                      name="chevron-expand"
+                      size={20}
+                      color={theme.textSecondary}
+                      style={styles.chevron}
+                    />
+                  </View>
+                </NativeDropdown>
+              </View>
             ) : (
               renderSettingItem({
                 title: t('settings.imageCacheSize'),
