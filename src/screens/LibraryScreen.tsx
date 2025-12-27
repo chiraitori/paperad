@@ -22,6 +22,9 @@ import { MangaCard, EmptyState, MangaPreviewModal, MangaCardWithPreview } from '
 import { RootStackParamList, LibraryEntry, Manga } from '../types';
 import { getGeneralSettings, GeneralSettings, defaultSettings } from '../services/settingsService';
 import { t } from '../services/i18nService';
+import Constants from 'expo-constants';
+
+const isExpoGo = Constants.appOwnership === 'expo';
 
 type LibraryScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -91,8 +94,8 @@ export const LibraryScreen: React.FC = () => {
     };
   }, [performAuthCheck]);
 
-  // Prevent screen capture when library auth is enabled
-  usePreventScreenCapture(settings.libraryAuth ? 'library_auth' : undefined);
+  // Prevent screen capture when library auth is enabled (disabled in Expo Go)
+  usePreventScreenCapture(!isExpoGo && settings.libraryAuth ? 'library_auth' : undefined);
 
   // Load settings and check auth when screen is focused
   useFocusEffect(

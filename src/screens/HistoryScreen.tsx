@@ -21,6 +21,9 @@ import { MangaCard, EmptyState, MangaPreviewModal, MangaCardWithPreview } from '
 import { RootStackParamList, LibraryEntry, Manga } from '../types';
 import { getGeneralSettings, GeneralSettings, defaultSettings } from '../services/settingsService';
 import { t } from '../services/i18nService';
+import Constants from 'expo-constants';
+
+const isExpoGo = Constants.appOwnership === 'expo';
 
 type HistoryScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -85,7 +88,7 @@ export const HistoryScreen: React.FC = () => {
   }, [performAuthCheck]);
 
   // Prevent screen capture when history auth is enabled
-  usePreventScreenCapture(settings.historyAuth ? 'history_auth' : undefined);
+  usePreventScreenCapture(!isExpoGo && settings.historyAuth ? 'history_auth' : undefined);
 
   // Load settings and check auth when screen is focused
   useFocusEffect(
