@@ -66,9 +66,7 @@ export const NativeDropdown: React.FC<NativeDropdownProps> = ({
         return (
             <DropdownMenuRoot>
                 <DropdownMenuTrigger>
-                    <Pressable>
-                        {children}
-                    </Pressable>
+                    {children}
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent>
