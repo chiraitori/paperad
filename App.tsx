@@ -142,13 +142,13 @@ export default function App() {
         // Map quick action IDs to tab names
         switch (routeName) {
           case 'library':
-            navigationRef.navigate('Main', { screen: 'Library' });
+            (navigationRef as any).navigate('Main', { screen: 'Library' });
             break;
           case 'history':
-            navigationRef.navigate('Main', { screen: 'History' });
+            (navigationRef as any).navigate('Main', { screen: 'History' });
             break;
           case 'search':
-            navigationRef.navigate('Main', { screen: 'Search' });
+            (navigationRef as any).navigate('Main', { screen: 'Search' });
             break;
           default:
             console.log('Unknown quick action:', routeName);

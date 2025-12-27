@@ -40,7 +40,7 @@ export const getDeveloperSettings = async (): Promise<DeveloperSettings> => {
     const stored = await AsyncStorage.getItem(DEVELOPER_SETTINGS_KEY);
     if (stored) {
       cachedSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-      return cachedSettings;
+      return cachedSettings!;
     }
   } catch (error) {
     console.error('Failed to load developer settings:', error);
@@ -125,18 +125,18 @@ export const logNetworkRequest = (entry: Omit<NetworkLogEntry, 'id' | 'timestamp
     id,
     timestamp: Date.now(),
   };
-  
+
   networkLogs.unshift(logEntry);
-  
+
   // Keep only last N logs
   if (networkLogs.length > MAX_NETWORK_LOGS) {
     networkLogs.pop();
   }
-  
+
   if (cachedSettings?.networkInspector) {
     console.log('[NETWORK]', entry.method, entry.url, entry.status || 'pending');
   }
-  
+
   return id;
 };
 
@@ -206,7 +206,7 @@ export const initLogCapture = () => {
 };
 
 const addLog = (level: LogEntry['level'], args: any[]) => {
-  const message = args.map(arg => 
+  const message = args.map(arg =>
     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
   ).join(' ');
 

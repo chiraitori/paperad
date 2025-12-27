@@ -1054,10 +1054,10 @@ export const ReaderScreen: React.FC = () => {
 
               <View style={styles.titleContainer}>
                 <Text style={styles.mangaTitle} numberOfLines={1}>
-                  {manga.title}
+                  {manga?.title}
                 </Text>
                 <Text style={styles.chapterInfo}>
-                  Ch. {chapter.number}{chapter.title ? ` - ${chapter.title}` : ''}
+                  Ch. {chapter?.number}{chapter?.title ? ` - ${chapter.title}` : ''}
                 </Text>
               </View>
 

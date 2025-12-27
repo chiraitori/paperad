@@ -89,9 +89,15 @@ export const DeveloperScreen: React.FC = () => {
         `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}`
       ).join('\n');
 
-      const fileUri = (FileSystem.documentDirectory || '') + `developer_logs_${Date.now()}.txt`;
-      await FileSystem.writeAsStringAsync(fileUri, logContent, {
-        encoding: FileSystem.EncodingType.UTF8,
+      const docDir = (FileSystem as any).documentDirectory as string | null;
+      if (!docDir) {
+        Alert.alert('Export Failed', 'Could not access document directory');
+        return;
+      }
+
+      const fileUri = docDir + `developer_logs_${Date.now()}.txt`;
+      await (FileSystem as any).writeAsStringAsync(fileUri, logContent, {
+        encoding: 'utf8',
       });
 
       if (await Sharing.isAvailableAsync()) {
@@ -360,19 +366,23 @@ export const DeveloperScreen: React.FC = () => {
                   title: 'Custom API Endpoint',
                   subtitle: settings.customApiEndpoint || 'Not configured (using default)',
                   onPress: () => {
-                    Alert.prompt?.(
-                      'Custom API URL',
-                      'Enter custom API endpoint (leave empty to reset)',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Save',
-                          onPress: (text?: string) => updateSetting('customApiEndpoint', text || ''),
-                        },
-                      ],
-                      'plain-text',
-                      settings.customApiEndpoint
-                    ) || Alert.alert('API URL', `Current: ${settings.customApiEndpoint || 'Default'}\n\nEdit in code for Android.`);
+                    if (Alert.prompt) {
+                      Alert.prompt(
+                        'Custom API URL',
+                        'Enter custom API endpoint (leave empty to reset)',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Save',
+                            onPress: (text?: string) => updateSetting('customApiEndpoint', text || ''),
+                          },
+                        ],
+                        'plain-text',
+                        settings.customApiEndpoint
+                      );
+                    } else {
+                      Alert.alert('API URL', `Current: ${settings.customApiEndpoint || 'Default'}\n\nEdit in code for Android.`);
+                    }
                   },
                 })}
                 {renderSettingItem({
