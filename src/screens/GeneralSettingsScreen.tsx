@@ -288,27 +288,27 @@ export const GeneralSettingsScreen: React.FC = () => {
                 <View style={styles.section}>
                     {renderSectionHeader(t('generalSettings.chapterListSort'))}
                     <View style={[styles.sectionContent, { backgroundColor: theme.card }]}>
-                        <NativeDropdown
-                            options={[
-                                { label: t('generalSettings.ascending'), value: 'ascending' },
-                                { label: t('generalSettings.descending'), value: 'descending' },
-                            ]}
-                            selectedValue={settings.chapterListSort}
-                            onSelect={(value) => updateSetting('chapterListSort', value as 'ascending' | 'descending')}
-                            title={t('generalSettings.chapterSort')}
-                        >
-                            <View style={[styles.itemContainer, { borderBottomColor: theme.border }]}>
-                                <Text style={[styles.itemTitle, { color: theme.text }]}>
-                                    {t('generalSettings.chapterSort')}
-                                </Text>
+                        <View style={[styles.itemContainer, { borderBottomColor: theme.border }]}>
+                            <Text style={[styles.itemTitle, { color: theme.text }]}>
+                                {t('generalSettings.chapterSort')}
+                            </Text>
+                            <NativeDropdown
+                                options={[
+                                    { label: t('generalSettings.ascending'), value: 'ascending' },
+                                    { label: t('generalSettings.descending'), value: 'descending' },
+                                ]}
+                                selectedValue={settings.chapterListSort}
+                                onSelect={(value) => updateSetting('chapterListSort', value as 'ascending' | 'descending')}
+                                title={t('generalSettings.chapterSort')}
+                            >
                                 <View style={styles.rightContainer}>
                                     <Text style={[styles.itemValue, { color: theme.textSecondary }]}>
                                         {settings.chapterListSort === 'ascending' ? t('generalSettings.ascending') : t('generalSettings.descending')}
                                     </Text>
                                     <Ionicons name="chevron-expand" size={20} color={theme.textSecondary} />
                                 </View>
-                            </View>
-                        </NativeDropdown>
+                            </NativeDropdown>
+                        </View>
                     </View>
                 </View>
 

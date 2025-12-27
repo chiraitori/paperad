@@ -212,22 +212,22 @@ export const ThemeSettingsScreen: React.FC = () => {
         {/* Theme Mode */}
         {renderSection(
           t('theme.appearance'),
-          <NativeDropdown
-            options={[
-              { label: t('theme.light'), value: 'light' },
-              { label: t('theme.dark'), value: 'dark' },
-              { label: t('theme.system'), value: 'system' },
-            ]}
-            selectedValue={themeMode}
-            onSelect={(value) => setThemeMode(value as 'light' | 'dark' | 'system')}
-            title={t('theme.themeMode')}
-          >
-            <View style={[styles.settingItem, { borderBottomColor: theme.border }]}>
-              <View style={styles.leftContent}>
-                <Text style={[styles.settingTitle, { color: theme.text }]}>
-                  {t('theme.themeMode')}
-                </Text>
-              </View>
+          <View style={[styles.settingItem, { borderBottomColor: theme.border }]}>
+            <View style={styles.leftContent}>
+              <Text style={[styles.settingTitle, { color: theme.text }]}>
+                {t('theme.themeMode')}
+              </Text>
+            </View>
+            <NativeDropdown
+              options={[
+                { label: t('theme.light'), value: 'light' },
+                { label: t('theme.dark'), value: 'dark' },
+                { label: t('theme.system'), value: 'system' },
+              ]}
+              selectedValue={themeMode}
+              onSelect={(value) => setThemeMode(value as 'light' | 'dark' | 'system')}
+              title={t('theme.themeMode')}
+            >
               <View style={styles.rightContainer}>
                 <Text style={[styles.valueText, { color: theme.textSecondary }]}>
                   {getThemeLabel(themeMode)}
@@ -239,8 +239,8 @@ export const ThemeSettingsScreen: React.FC = () => {
                   style={styles.selectorIcon}
                 />
               </View>
-            </View>
-          </NativeDropdown>
+            </NativeDropdown>
+          </View>
         )}
 
         {/* Built-in Theme */}
